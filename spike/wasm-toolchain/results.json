@@ -25,15 +25,15 @@
       "url": "https://github.com/binji/wasm-clang",
       "license": "Apache-2.0",
       "approach": "A",
-      "initMs": 0,
-      "coldCompileMs": 0,
-      "warmCompileMs": 0,
-      "runMs": 0,
+      "initMs": null,
+      "coldCompileMs": 5663,
+      "warmCompileMs": 3832,
+      "runMs": null,
       "transferredBytes": 60385250,
       "outputMatch": false,
       "supportsBitsStdcpp": false,
-      "verdict": "pending-browser-run",
-      "notes": "Live demo at https://binji.github.io/wasm-clang/ returns HTTP 200 with Access-Control-Allow-Origin: * on all artifacts (verified May 2026). shared.js exposes a full API class; worker.js wraps it with a compileLinkRun(sourceString) postMessage protocol — fully programmatic, no UI automation required. Payload: ~60 MB cold (clang ~31 MB + lld ~19 MB + sysroot.tar ~9 MB + memfs ~338 KB + JS glue). Repo updated as recently as May 2026 despite 'unmaintained' label. Key caveat: sysroot uses LLVM libc++, not libstdc++, so <bits/stdc++.h> is unavailable; driver uses sample-libc++.cpp with explicit includes instead — supportsBitsStdcpp is false. To measure: serve spike/wasm-toolchain/ with any static server (no special headers), open /binji/, wait for ~60 MB download, then click Cold compile then Warm compile. Note: binji's API has no explicit init() — the first compileLinkRun triggers all downloads; cold total (download + compile + link + run) is recorded as coldCompileMs. initMs is 0 until a browser run separates download from compile time."
+      "verdict": "FAIL",
+      "notes": "FAIL: (1) bundled libc++.a references __lttf2 (compiler-rt helper for 128-bit long double) but sysroot lacks compiler-rt; link fails on any code that pulls in <algorithm>+libc++. Verbatim error: \"wasm-ld: error: lib/wasm32-wasi/libc++.a(algorithm.cpp.obj): undefined symbol: __lttf2 / Error: process exited with code 1.\". (2) Warm compile 3832 ms — clang/lld are reloaded on every Run, ~4× over the ≤1 s budget. (3) Bundled clang is 8.0.1 (May 2019), too old for reliable C++17/20."
     }
   ]
 }

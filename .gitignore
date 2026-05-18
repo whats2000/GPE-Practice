@@ -1,3 +1,5 @@
 # Downloaded artifact caches — re-populate with the curl commands in each
 # spike's README.md or driver.js. Never commit binary blobs.
+spike/**/node_modules/
 spike/**/.cache/
+spike/wasm-toolchain/emception/emception-lib/
