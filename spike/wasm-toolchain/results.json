@@ -7,5 +7,17 @@
       "verdict": "N/A",
       "notes": "Language-server only; no codegen pipeline. Detailed reason: clangd is the Language Server Protocol front-end of LLVM/Clang — it provides diagnostics, code completion, hover, go-to-definition, and similar editor intelligence features. It does NOT invoke the LLVM backend for code generation and produces no object files, WASM modules, or executable binaries. The best-maintained browser port (guyutongxue/clangd-in-browser) explicitly confirms this: its README states the project gives 'C++ IntelliSense directly without installing any native compiler', and its demo integrates only with Monaco Editor's language-client stack. The upstream clangd/clangd repository is equally clear that clangd is a language server, not a compiler. Browser projects that DO compile C++ to runnable WASM (binji/wasm-clang, tbfleming/cib) compile the full Clang + LLD toolchain to WASM — they use clang, not clangd — and both are unmaintained alpha/demo projects predating 2020. No actively-maintained clangd distribution that performs code generation was found."
     }
+    ,
+    {
+      "name": "jscpp",
+      "url": "https://github.com/felixhao28/JSCPP",
+      "license": "MIT",
+      "runMs": 0,
+      "transferredBytes": 0,
+      "outputMatch": false,
+      "supportsBitsStdcpp": false,
+      "verdict": "pending-browser-run",
+      "notes": "Pure JS interpreter, no codegen. <bits/stdc++.h> almost certainly unsupported — included as fallback only."
+    }
   ]
 }
