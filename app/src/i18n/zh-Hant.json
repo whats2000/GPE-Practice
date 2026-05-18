@@ -1,0 +1,29 @@
+{
+  "common": {
+    "appName": "GPE 練習",
+    "footer": "所有測資與題目皆透過 PR 貢獻；資料僅儲存於此瀏覽器。",
+    "originalSite": "原版 GPE-Helper",
+    "back": "返回",
+    "loading": "載入中…"
+  },
+  "nav": {
+    "questions": "題目",
+    "settings": "設定"
+  },
+  "questionList": {
+    "title": "題目列表",
+    "placeholder": "Phase 2 將加入資料、推薦度排序、搜尋與過濾。"
+  },
+  "questionView": {
+    "title": "題目：{{id}}",
+    "placeholder": "Phase 4 將加入 Practice / Exam Mode 分頁與 Monaco 編輯器。"
+  },
+  "settings": {
+    "title": "設定",
+    "placeholder": "外觀主題、鍵盤快捷鍵、本機資料匯出 / 匯入。"
+  },
+  "notFound": {
+    "title": "找不到頁面",
+    "backToList": "回到題目列表"
+  }
+}

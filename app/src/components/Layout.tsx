@@ -1,6 +1,8 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 export default function Layout() {
+  const { t } = useTranslation()
   const location = useLocation()
   const isActive = (path: string) =>
     location.pathname === path
@@ -12,11 +14,11 @@ export default function Layout() {
       <header className="border-b border-slate-200 dark:border-slate-800">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center gap-6">
           <Link to="/" className="text-xl font-bold">
-            GPE 練習
+            {t('common.appName')}
           </Link>
           <nav className="flex gap-4 text-sm">
-            <Link to="/" className={isActive('/')}>題目</Link>
-            <Link to="/settings" className={isActive('/settings')}>設定</Link>
+            <Link to="/" className={isActive('/')}>{t('nav.questions')}</Link>
+            <Link to="/settings" className={isActive('/settings')}>{t('nav.settings')}</Link>
           </nav>
           <a
             href="https://gpe-helper.setsal.dev/"
@@ -24,7 +26,7 @@ export default function Layout() {
             rel="noopener noreferrer"
             className="ml-auto text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
           >
-            原版 GPE-Helper ↗
+            {t('common.originalSite')} ↗
           </a>
         </div>
       </header>
@@ -33,7 +35,7 @@ export default function Layout() {
       </main>
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-auto">
         <div className="mx-auto max-w-6xl px-6 py-4 text-xs text-slate-500">
-          所有測資與題目皆透過 PR 貢獻；資料僅儲存於此瀏覽器。
+          {t('common.footer')}
         </div>
       </footer>
     </div>

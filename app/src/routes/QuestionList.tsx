@@ -1,9 +1,12 @@
+import { useTranslation } from 'react-i18next'
+
 export default function QuestionList() {
+  const { t } = useTranslation()
   return (
     <section>
-      <h1 className="text-2xl font-bold">題目列表</h1>
+      <h1 className="text-2xl font-bold">{t('questionList.title')}</h1>
       <p className="mt-2 text-slate-600 dark:text-slate-400">
-        Phase 2 將加入資料、推薦度排序、搜尋與過濾。
+        {t('questionList.placeholder')}
       </p>
     </section>
   )
