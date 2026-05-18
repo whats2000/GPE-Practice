@@ -235,7 +235,7 @@ async function compile(emception, src) {
   // -I/working/bits is intentionally NOT used — instead we expose -I/working
   // so the user's `#include <bits/stdc++.h>` resolves to /working/bits/stdc++.h.
   const result = await emception.run(
-    'em++ -O2 -std=c++17 -I/working -sSTANDALONE_WASM=1 -sEXIT_RUNTIME=1 main.cpp -o main.wasm'
+    'em++ -O2 -std=c++17 -I/working -sSTANDALONE_WASM=1 main.cpp -o main.wasm'
   );
 
   if (result.returncode !== 0) {
