@@ -49,6 +49,8 @@ export default [
         HTMLUListElement: 'readonly',
         HTMLLIElement: 'readonly',
         HTMLLabelElement: 'readonly',
+        btoa: 'readonly',
+        atob: 'readonly',
       },
     },
     plugins: {
