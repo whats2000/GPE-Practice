@@ -54,5 +54,48 @@
   "notFound": {
     "title": "找不到頁面",
     "backToList": "回到題目列表"
+  },
+  "ide": {
+    "tabs": {
+      "practice": "Practice",
+      "examMode": "Exam Mode"
+    },
+    "buttons": {
+      "run": "▶ 執行",
+      "submit": "✓ 提交",
+      "running": "編譯中…",
+      "showProblem": "👁 顯示題目",
+      "hideProblem": "🙈 隱藏題目"
+    },
+    "panes": {
+      "problem": "題目",
+      "code": "程式碼",
+      "testcases": "測資",
+      "output": "輸出",
+      "submissions": "歷史紀錄"
+    },
+    "verdict": {
+      "AC": "通過",
+      "WA": "答案錯誤",
+      "TLE": "執行超時",
+      "RE": "執行錯誤",
+      "CE": "編譯錯誤",
+      "PENDING": "等待中"
+    },
+    "examChrome": {
+      "menu": ["檔案", "編輯", "檢視", "建置", "說明"],
+      "buildStatus": "Build status",
+      "lineCol": "行 {{line}}, 欄 {{col}}",
+      "config": "Release",
+      "buildLog": "建置日誌"
+    },
+    "loading": {
+      "compiler": "正在初始化 emception（首次載入約 1 分鐘）…",
+      "statement": "載入題目中…"
+    },
+    "errors": {
+      "compileFailed": "編譯失敗",
+      "noCasesVisible": "目前沒有可見的測資。請新增測資或開啟隱藏測資。"
+    }
   }
 }
