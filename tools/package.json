@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.33.4",
   "scripts": {
     "build-manifest": "tsx build-manifest.ts",
     "validate-question": "tsx validate-question.ts",

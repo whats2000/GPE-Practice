@@ -31,8 +31,12 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Install dependencies
+      - name: Install app dependencies
         working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Install tools dependencies
+        working-directory: tools
         run: pnpm install --frozen-lockfile
 
       - name: Type-check + build
