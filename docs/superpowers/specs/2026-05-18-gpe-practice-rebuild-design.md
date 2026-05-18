@@ -451,9 +451,9 @@ The script uses the `openai` npm package (since most providers, including Anthro
 
 **Claim:** clang + libc++ in WASM compiles a 30-line `<bits/stdc++.h>`-using sample in ≤ 4 s on a 2020-era laptop.
 
-**Real concerns:** payload size (20–60 MB), `<bits/stdc++.h>` availability, C++17 stdlib completeness, IndexedDB quota on iOS Safari, virtualized stdin/stdout edge cases (`freopen`).
+**Real concerns:** payload size (20–60 MB), `<bits/stdc++.h>` availability, C++17 stdlib completeness, IndexedDB quota on iOS Safari (n/a for v1 since mobile is out of scope), virtualized stdin/stdout edge cases (`freopen`).
 
-**Spike:** ~1 day. Build a minimal HTML page that loads one specific toolchain (candidates: `wasm-clang`, `clangd-wasm`, `cpp-wasm-toolchain`), compiles a representative GPE-style sample, runs it against a stdin/stdout fixture. Pick the toolchain that supports `<bits/stdc++.h>`, cold compile < 6 s, warm < 1 s, cached payload < 40 MB, permissive license.
+**Spike:** ~1 day. Build a minimal HTML page that loads one specific toolchain (candidates: `wasm-clang`, `clangd-wasm`, `cpp-wasm-toolchain`), compiles a representative GPE-style sample, runs it against a stdin/stdout fixture. Pick the toolchain that supports `<bits/stdc++.h>` (directly or via a trivial polyfill), cold compile < 6 s, warm < 1 s, **cached payload ≤ ~60 MB on first load** (acceptable provided IndexedDB caching keeps subsequent sessions warm), permissive license.
 
 **Fallback if no candidate passes:** Re-open Question 1 (the "in-browser vs Judge0 service" decision); the static-only invariant gets a controlled exception for a tiny self-hosted Judge0 instance.
 
