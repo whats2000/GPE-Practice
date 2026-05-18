@@ -17,8 +17,12 @@ export default function Layout() {
             {t('common.appName')}
           </Link>
           <nav className="flex gap-4 text-sm">
-            <Link to="/" className={isActive('/')}>{t('nav.questions')}</Link>
-            <Link to="/settings" className={isActive('/settings')}>{t('nav.settings')}</Link>
+            <Link to="/" className={isActive('/')}>
+              {t('nav.questions')}
+            </Link>
+            <Link to="/settings" className={isActive('/settings')}>
+              {t('nav.settings')}
+            </Link>
           </nav>
           <a
             href="https://gpe-helper.setsal.dev/"

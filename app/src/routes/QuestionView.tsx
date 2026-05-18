@@ -7,9 +7,7 @@ export default function QuestionView() {
   return (
     <section>
       <h1 className="text-2xl font-bold">{t('questionView.title', { id })}</h1>
-      <p className="mt-2 text-slate-600 dark:text-slate-400">
-        {t('questionView.placeholder')}
-      </p>
+      <p className="mt-2 text-slate-600 dark:text-slate-400">{t('questionView.placeholder')}</p>
     </section>
   )
 }

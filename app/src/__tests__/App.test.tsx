@@ -15,8 +15,6 @@ describe('App', () => {
 
   it('shows the footer note about local-first data', () => {
     render(<App />)
-    expect(
-      screen.getByText(/所有測資與題目皆透過 PR 貢獻/),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/所有測資與題目皆透過 PR 貢獻/)).toBeInTheDocument()
   })
 })

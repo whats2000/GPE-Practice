@@ -4,8 +4,8 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 export type Verdict = 'PENDING' | 'AC' | 'WA' | 'TLE' | 'RE'
 
 export interface IdeState {
-  source: Record<string, string>          // keyed by questionId
-  results: Record<string, Record<string, Verdict>>  // questionId -> caseId -> verdict
+  source: Record<string, string> // keyed by questionId
+  results: Record<string, Record<string, Verdict>> // questionId -> caseId -> verdict
   isRunning: boolean
   setSource: (questionId: string, src: string) => void
   setResult: (questionId: string, caseId: string, verdict: Verdict) => void
@@ -18,8 +18,7 @@ export const useIdeStore = create<IdeState>()(
       source: {},
       results: {},
       isRunning: false,
-      setSource: (questionId, src) =>
-        set((s) => ({ source: { ...s.source, [questionId]: src } })),
+      setSource: (questionId, src) => set((s) => ({ source: { ...s.source, [questionId]: src } })),
       setResult: (questionId, caseId, verdict) =>
         set((s) => ({
           results: {
