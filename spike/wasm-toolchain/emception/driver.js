@@ -1,53 +1,33 @@
 /**
- * Emception evaluation driver
+ * Emception evaluation driver — pivoted to gh-pages pre-built artifacts
  *
- * API source: https://github.com/jprendes/emception
+ * Pivot reason: local Docker build of emception OOMed twice (at ~83% and ~92% of
+ * the LLVM link step). Instead of rebuilding, we use the webpack bundle that
+ * powers the live demo at https://jprendes.github.io/emception/.
  *
- * DISTRIBUTION CHANNEL
- *   - No CDN. Emception must be self-hosted from a local build produced by
- *     `./build-with-docker.sh` in the emception repo. Output lands in
- *     `build/emception/`. The live demo at https://jprendes.github.io/emception/
- *     is a webpack bundle that aliases `emception` → `../build/emception`.
- *   - There is an npm package (@jprendes/emception on GitHub Package Registry),
- *     but it only contains the compiled llvm-box wasm, not the full runtime.
- *   - No esm.sh / jsDelivr / unpkg entry exists.
+ * Architecture:
+ *   - emception.worker.bundle.worker.js  — self-contained webpack worker bundle
+ *     (Comlink.expose + full emception runtime + lazy sysroot loader)
+ *   - cecdfcda360457a8f204.br            — root.pack.br (23.5 MB brotli archive
+ *     containing llvm-box.wasm, binaryen-box.wasm, python.wasm, quicknode.wasm,
+ *     wasm-package.wasm) — fetched by the worker on init
+ *   - f0283badd42fe745cbe4.wasm          — wasm-package tool (804 KB)
+ *   - 9d1e542b80004e27297f.wasm          — brotli decompressor (147 KB)
+ *   - 44 sysroot .a files (hashed names) — lazily XHR-fetched by the worker
+ *     when the linker first accesses each library (only the needed variants)
+ *   - comlink.mjs                        — Comlink 4.4.1 for Worker RPC
  *
- * ACTUAL API SURFACE (demo/emception.js)
- *   class Emception {
- *     fileSystem: FileSystem          — shared virtual FS (Emscripten MEMFS/IDBFS)
- *     async init(): Promise<void>     — downloads + unpacks toolchain packs (~100–200 MB),
- *                                       spawns llvm-box / binaryen-box / python / node
- *                                       worker processes
- *     run(cmd: string): Promise<{ returncode: number, stdout: string, stderr: string }>
- *                                     — runs ONE emscripten command (e.g. "em++ ...") inside
- *                                       the virtual FS; output is written to /working/
- *     onstdout, onstderr: (str) => void  — tap into real-time output
- *     onprocessstart, onprocessend: callbacks
- *   }
+ * All files must live in ./emception/.cache/ (same-origin) because the page is
+ * served with COEP: require-corp, which blocks cross-origin resources that lack
+ * CORP headers (GitHub Pages ACAO:* is not sufficient under COEP).
  *
- * IMPORTANT DIFFERENCES FROM THE ILLUSTRATIVE SKELETON
- *   - There is NO emception.compile(src) → {wasm} API.
- *   - Compilation output goes to the *virtual filesystem* at /working/.
- *     The driver reads the compiled .wasm back out with fileSystem.readFile().
- *   - Running the compiled wasm requires WebAssembly.instantiate + a WASI-like
- *     environment, not a built-in emception.run(wasm, {stdin}).
- *     Here we use the native WebAssembly API with a minimal import stub that
- *     wires stdin (via a pre-loaded buffer), stdout, and stderr.
- *   - Emception requires SharedArrayBuffer (COOP/COEP headers) because some of
- *     its internal Emscripten modules use shared memory.
- *     Add these headers to your dev server (e.g. vite.config.js / vite.json):
- *       "Cross-Origin-Opener-Policy": "same-origin"
- *       "Cross-Origin-Embedder-Policy": "require-corp"
+ * The worker bundle derives its public path from self.location.href, so placing
+ * it inside .cache/ makes it automatically fetch the hashed .a files from
+ * .cache/hash.a — no patching needed.
  *
- * SETUP BEFORE RUNNING
- *   1. Clone https://github.com/jprendes/emception
- *   2. Run ./build-with-docker.sh  (takes ~1 h)
- *   3. Symlink or copy the build output so that:
- *        <this dir>/emception-lib/ → <emception repo>/build/emception/
- *      e.g.:  mklink /D emception-lib ..\..\..\emception\build\emception
- *   4. Serve the spike/ directory with a server that sends COOP/COEP headers,
- *      e.g.: npx vite --config ../vite-coop.config.js
- *   5. Open http://localhost:5173/emception/
+ * COOP/COEP server: node spike/wasm-toolchain/serve-coop-coep.mjs
+ *
+ * MANIFEST: see MANIFEST.md in this directory.
  */
 
 // ---------------------------------------------------------------------------
@@ -85,10 +65,8 @@ async function runWasm(wasmBytes, stdinText) {
   let stdoutBuf = '';
   let stderrBuf = '';
 
-  // The WASI snapshot_preview1 imports needed for a simple I/O program.
   const wasiImports = {
     wasi_snapshot_preview1: {
-      // fd_write: used for stdout (fd=1) and stderr (fd=2)
       fd_write(fd, iovsPtr, iovsLen, nwrittenPtr) {
         const mem = new DataView(instance.exports.memory.buffer);
         let total = 0;
@@ -101,9 +79,8 @@ async function runWasm(wasmBytes, stdinText) {
           total += len;
         }
         mem.setUint32(nwrittenPtr, total, true);
-        return 0; // WASI_ESUCCESS
+        return 0;
       },
-      // fd_read: used for stdin (fd=0)
       fd_read(fd, iovsPtr, iovsLen, nreadPtr) {
         if (fd !== 0) return 8; // WASI_EBADF
         const mem = new DataView(instance.exports.memory.buffer);
@@ -121,11 +98,10 @@ async function runWasm(wasmBytes, stdinText) {
       },
       proc_exit(code) { throw Object.assign(new Error('proc_exit'), { code }); },
       fd_close() { return 0; },
-      fd_seek()  { return 70; }, // WASI_ESPIPE – not seekable
+      fd_seek()  { return 70; }, // WASI_ESPIPE
       fd_fdstat_get(fd, statPtr) {
-        // Report all fds as character devices
         const mem = new DataView(instance.exports.memory.buffer);
-        mem.setUint8(statPtr, fd < 3 ? 2 : 0); // filetype: 2=char_device
+        mem.setUint8(statPtr, fd < 3 ? 2 : 0);
         return 0;
       },
       environ_get()      { return 0; },
@@ -173,13 +149,10 @@ async function runWasm(wasmBytes, stdinText) {
 // Compile helper — writes src to virtual FS, runs em++, reads back .wasm
 // ---------------------------------------------------------------------------
 async function compile(emception, src) {
-  // Write the source into the shared virtual filesystem
-  emception.fileSystem.writeFile('/working/main.cpp', src);
+  // Write source into the worker's virtual filesystem
+  await emception.fileSystem.writeFile('/working/main.cpp', src);
 
-  // Run em++ targeting a standalone WASM binary (no JS glue, WASI ABI)
-  // -sSTANDALONE_WASM=1 produces main.wasm that uses the WASI ABI, so we can
-  // run it with a minimal hand-rolled WASI shim instead of Emscripten's full
-  // JS runtime. This keeps the "run" step self-contained in the browser.
+  // Run em++ targeting a standalone WASM binary (WASI ABI, no JS glue)
   const result = await emception.run(
     'em++ -O2 -std=c++17 -sSTANDALONE_WASM=1 -sEXIT_RUNTIME=1 main.cpp -o main.wasm'
   );
@@ -188,8 +161,8 @@ async function compile(emception, src) {
     throw new Error(`em++ failed (rc=${result.returncode}):\n${result.stderr}`);
   }
 
-  // Read the compiled wasm back out of the virtual filesystem
-  const wasmBytes = emception.fileSystem.readFile('/working/main.wasm');
+  // Read compiled wasm back from the virtual filesystem
+  const wasmBytes = await emception.fileSystem.readFile('/working/main.wasm');
   return wasmBytes; // Uint8Array
 }
 
@@ -200,33 +173,61 @@ let emception, sample;
 let coldWasmBytes;
 
 (async () => {
-  $status.textContent = '正在載入 emception 模組…';
+  $status.textContent = '正在載入 emception 工作執行緒…';
 
-  // Emception has no CDN; modules must be loaded from a local build.
-  // The dynamic import path below assumes you have symlinked / copied
-  // <emception repo>/build/emception/ to ./emception-lib/ relative to this file.
-  let EmceptionClass;
+  // Verify SharedArrayBuffer is available (requires COOP/COEP headers)
+  if (typeof SharedArrayBuffer === 'undefined') {
+    $status.textContent =
+      'BLOCKED: SharedArrayBuffer 不可用。\n\n' +
+      '請以支援 COOP/COEP 標頭的伺服器啟動：\n' +
+      '  node spike/wasm-toolchain/serve-coop-coep.mjs\n' +
+      '然後開啟 http://localhost:5173/emception/';
+    log('BLOCKED: SharedArrayBuffer not available');
+    return;
+  }
+
+  // Import Comlink from local same-origin cache
+  let Comlink;
   try {
-    const mod = await import('./emception-lib/emception.js');
-    EmceptionClass = mod.default;
+    const comlinkModule = await import('./.cache/comlink.mjs');
+    Comlink = comlinkModule;
   } catch (e) {
     $status.textContent =
-      'BLOCKED: 無法載入 emception 模組。\n\n' +
-      '請先建置 emception（需要 Docker + ~1 h）後再執行此測試：\n' +
-      '  1. git clone https://github.com/jprendes/emception\n' +
-      '  2. cd emception && ./build-with-docker.sh\n' +
-      '  3. mklink /D spike/wasm-toolchain/emception/emception-lib ' +
-      '<emception repo>/build/emception\n' +
-      '  4. 以支援 COOP/COEP 標頭的伺服器重新啟動\n\n' +
+      'BLOCKED: 無法載入 Comlink。\n\n' +
+      '請先執行下載腳本（詳見 MANIFEST.md）。\n\n' +
       '錯誤：' + e.message;
     log('BLOCKED: ' + e.message);
     return;
   }
 
-  $status.textContent = '正在初始化 emception（下載工具鏈，約 100–200 MB）…';
+  // Spin up the emception worker bundle from local cache
+  let worker;
+  try {
+    worker = new Worker('./.cache/emception.worker.bundle.worker.js');
+  } catch (e) {
+    $status.textContent =
+      'BLOCKED: 無法建立 Worker。\n\n' +
+      '確認 .cache/emception.worker.bundle.worker.js 存在。\n\n' +
+      '錯誤：' + e.message;
+    log('BLOCKED: ' + e.message);
+    return;
+  }
+
+  // Wrap with Comlink so we can call methods asynchronously
+  emception = Comlink.wrap(worker);
+
+  $status.textContent = '正在初始化 emception（載入工具鏈，約 24+ MB）…';
   const t0 = performance.now();
-  emception = new EmceptionClass();
-  await emception.init();
+
+  try {
+    await emception.init();
+  } catch (e) {
+    $status.textContent = 'FAILED 在 init(): ' + e.message;
+    log('ERROR in init(): ' + e.message);
+    console.error(e);
+    return;
+  }
+
   const initMs = (performance.now() - t0).toFixed(0);
 
   sample = await loadSample();
@@ -249,14 +250,12 @@ $cold.onclick = async () => {
   log('--- 冷編譯 ---');
 
   try {
-    // Compile
     const ct0 = performance.now();
     coldWasmBytes = await compile(emception, sample.src);
     const coldCompileMs = (performance.now() - ct0).toFixed(0);
     log(`coldCompileMs: ${coldCompileMs} ms`);
     log(`wasm bytes: ${coldWasmBytes.byteLength}`);
 
-    // Run
     const rt0 = performance.now();
     const runResult = await runWasm(coldWasmBytes.buffer.slice(
       coldWasmBytes.byteOffset,

@@ -35,5 +35,20 @@
       "verdict": "FAIL",
       "notes": "FAIL: (1) bundled libc++.a references __lttf2 (compiler-rt helper for 128-bit long double) but sysroot lacks compiler-rt; link fails on any code that pulls in <algorithm>+libc++. Verbatim error: \"wasm-ld: error: lib/wasm32-wasi/libc++.a(algorithm.cpp.obj): undefined symbol: __lttf2 / Error: process exited with code 1.\". (2) Warm compile 3832 ms — clang/lld are reloaded on every Run, ~4× over the ≤1 s budget. (3) Bundled clang is 8.0.1 (May 2019), too old for reliable C++17/20."
     }
+    ,
+    {
+      "name": "emception",
+      "url": "https://github.com/jprendes/emception",
+      "license": "MIT",
+      "approach": "gh-pages-prebuilt",
+      "initMs": 0,
+      "coldCompileMs": 0,
+      "warmCompileMs": 0,
+      "runMs": 0,
+      "transferredBytes": 0,
+      "outputMatch": false,
+      "verdict": "pending-browser-run",
+      "notes": "local Docker build OOMed twice (~83% and ~92% of LLVM link step); pivoted to using pre-built artifacts from jprendes.github.io/emception/ self-hosted in .cache/. Harness rewired: driver.js now imports Comlink from .cache/comlink.mjs and loads .cache/emception.worker.bundle.worker.js. All 57.6 MB of artifacts downloaded and verified (23.5 MB root pack + 30.8 MB sysroot + 3.6 MB bundles). Awaiting browser run for timing measurements."
+    }
   ]
 }
