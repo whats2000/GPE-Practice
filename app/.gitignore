@@ -4,3 +4,8 @@ dist-ssr/
 *.local
 .vite/
 .vitest-cache/
+
+# tsc -b / Vite TypeScript build outputs (emitted at app/ root)
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
