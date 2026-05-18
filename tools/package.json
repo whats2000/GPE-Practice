@@ -6,7 +6,8 @@
   "scripts": {
     "build-manifest": "tsx build-manifest.ts",
     "validate-question": "tsx validate-question.ts",
-    "download-emception": "tsx download-emception.ts"
+    "download-emception": "tsx download-emception.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "zod": "^3.23.8"
