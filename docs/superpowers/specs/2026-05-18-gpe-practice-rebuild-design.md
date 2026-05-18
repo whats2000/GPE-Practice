@@ -457,6 +457,8 @@ The script uses the `openai` npm package (since most providers, including Anthro
 
 **Fallback if no candidate passes:** Re-open Question 1 (the "in-browser vs Judge0 service" decision); the static-only invariant gets a controlled exception for a tiny self-hosted Judge0 instance.
 
+**COOP/COEP on GitHub Pages.** If the picked toolchain uses `SharedArrayBuffer` (emception does), the page needs `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp` headers. GitHub Pages disallows custom HTTP headers. **Resolution:** ship `coi-serviceworker` (or equivalent), a ~5 KB Service Worker that registers itself on first load and synthesizes the COOP/COEP headers client-side on all subsequent same-origin responses. Cost: one extra reload on a user's first ever visit (~1 s "preparing environment…" flash); zero cost thereafter. Static-only invariant preserved — the Service Worker is browser code, not a server we operate.
+
 ### 11.2 GitHub Device Flow CORS (MEDIUM)
 
 **Claim:** A static site can complete Device Flow purely from a browser.
