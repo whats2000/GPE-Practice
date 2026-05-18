@@ -100,16 +100,23 @@
     />
 
     <div class="help">
-      尚未建立 PAT？請前往
+      尚未建立 PAT？建議使用<strong>一鍵預填連結</strong>：
       <a
-        href="https://github.com/settings/personal-access-tokens/new"
+        href="https://github.com/settings/tokens/new?scopes=repo&description=GPE-Practice%20PR%20Bot"
         target="_blank"
         rel="noopener noreferrer"
-      >github.com/settings/personal-access-tokens/new</a>
-      建立一個細粒度權杖（Fine-grained PAT），並勾選以下權限：
-      <strong>Contents（Read &amp; write）</strong>、
-      <strong>Pull requests（Read &amp; write）</strong>、
-      <strong>Metadata（Read）</strong>。
+      >開啟已預填 scope 的建立頁面 ↗</a>
+      ，點「Generate token」即可。
+      <br />
+      <small>
+        進階：若要使用最小權限的 fine-grained PAT，請改前往
+        <a
+          href="https://github.com/settings/personal-access-tokens/new"
+          target="_blank"
+          rel="noopener noreferrer"
+        >personal-access-tokens/new</a>
+        並手動勾選 Contents（R/W）、Pull requests（R/W）、Metadata（R）。
+      </small>
     </div>
 
     <label>目標儲存庫</label>

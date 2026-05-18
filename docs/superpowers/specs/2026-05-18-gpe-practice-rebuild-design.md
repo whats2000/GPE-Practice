@@ -396,7 +396,10 @@ Both `PracticeLayout` and `ExamLayout` subscribe to the same store — switching
 2. A modal opens showing:
    - Optional override: target repo owner + name (auto-detected from `window.location.href` if served from GitHub Pages, e.g. `whats2000.github.io/GPE-Practice` → owner=whats2000, repo=GPE-Practice).
    - Password-style input with placeholder `ghp_...` for the PAT.
-   - Inline help link to https://github.com/settings/personal-access-tokens/new with the required scopes: Contents (R/W), Pull requests (R/W), Metadata (R).
+   - Inline help link with **prefilled scopes** — use the classic-token URL because it accepts query params and the fine-grained PAT page does not:
+     `https://github.com/settings/tokens/new?scopes=repo&description=GPE-Practice%20PR%20Bot`
+     This pre-checks the `repo` scope and pre-fills the description, so the user can click "Generate token" without thinking. Same UX pattern as the sibling project at https://github.com/whats2000/RoboSkills.
+   - Below the primary link: a small "進階：使用 fine-grained PAT" disclosure linking to `https://github.com/settings/personal-access-tokens/new` for security-conscious users who'd rather scope down to just Contents (R/W) + Pull requests (R/W) + Metadata (R).
    - "送出 PR" button (disabled until token is non-empty).
 3. On submit, octokit forks/branches/commits/PRs and reports back the PR URL.
 4. Token is stored in `localStorage` only if the user ticks "記住此瀏覽器"; default is paste-per-session.

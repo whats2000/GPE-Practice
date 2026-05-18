@@ -18,20 +18,34 @@ Device Flow 需要使用者自行註冊 GitHub App 並取得 Client ID，且
 
 ---
 
-## 建立 Fine-grained PAT
+## 建立 PAT（兩種方式擇一）
 
-1. 前往
-   [https://github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
-2. **Token name**：填入任何便於辨識的名稱，例如 `gpe-practice-spike`。
-3. **Repository access**：選擇「Only select repositories」，並加入
-   `whats2000/GPE-Practice`（或您要測試的目標儲存庫）。
+### 推薦方式：Classic Token + 預填連結（一鍵建立）
+
+點此連結即可開啟已預填 scope 與描述的建立頁面：
+
+> [github.com/settings/tokens/new?scopes=repo&description=GPE-Practice%20PR%20Bot](https://github.com/settings/tokens/new?scopes=repo&description=GPE-Practice%20PR%20Bot)
+
+頁面開啟後 `repo` scope 已預先勾選、描述欄位已填好，只需點「Generate token」即可。
+這是兄弟專案 RoboSkills 採用的方式，亦為本專案正式 UX（規格 §9）所採納。
+**請妥善保管 token，頁面離開後無法再次查看。**
+
+### 進階方式：Fine-grained PAT（最小權限）
+
+若希望採用最小權限原則，可改用 fine-grained PAT。注意此頁面**不支援**
+query 預填，必須手動勾選權限：
+
+1. 前往 [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
+2. **Token name**：例如 `gpe-practice-spike`
+3. **Repository access**：選擇「Only select repositories」，加入
+   `whats2000/GPE-Practice`
 4. **Permissions（Repository permissions）**：
    | 權限 | 層級 |
    |------|------|
    | Contents | Read and write |
    | Pull requests | Read and write |
    | Metadata | Read（預設必選） |
-5. 點擊「Generate token」並複製。**請妥善保管，頁面離開後無法再次查看。**
+5. 點擊「Generate token」並複製。
 
 ---
 
