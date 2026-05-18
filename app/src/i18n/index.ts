@@ -7,6 +7,7 @@ void i18n.use(initReactI18next).init({
   lng: 'zh-Hant',
   fallbackLng: 'zh-Hant',
   interpolation: { escapeValue: false },
+  initImmediate: false,
 })
 
 export default i18n

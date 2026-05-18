@@ -1,3 +1,4 @@
+import './i18n'
 import { HashRouter, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import QuestionList from './routes/QuestionList'
