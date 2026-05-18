@@ -55,6 +55,73 @@
     "title": "找不到頁面",
     "backToList": "回到題目列表"
   },
+  "contrib": {
+    "pat": {
+      "title": "送出 PR",
+      "description": "貢獻新增測資或題目需要您的 GitHub Personal Access Token (PAT)。Token 僅儲存於此瀏覽器。",
+      "targetRepo": "目標儲存庫",
+      "owner": "擁有者",
+      "repo": "儲存庫名稱",
+      "token": "GitHub Personal Access Token",
+      "tokenPlaceholder": "ghp_...",
+      "createToken": "建立 token（已預填 scope）",
+      "createTokenAdvanced": "進階：使用 fine-grained PAT",
+      "rememberInBrowser": "記住此瀏覽器（儲存於 localStorage）",
+      "showingLastFour": "已記住：…{{lastFour}}",
+      "submit": "送出 PR",
+      "submitting": "送出中…",
+      "cancel": "取消",
+      "successTitle": "PR 已建立！",
+      "successBody": "瀏覽 PR：{{url}}",
+      "errorTitle": "送出失敗",
+      "errors": {
+        "missingToken": "請輸入 PAT。",
+        "missingTarget": "請輸入目標儲存庫的擁有者與名稱。",
+        "auth": "Token 無效或權限不足。請檢查 scope 設定。"
+      }
+    },
+    "testcase": {
+      "buttonAdd": "+ 新增測資",
+      "title": "新增測資",
+      "stdin": "輸入（stdin）",
+      "expected": "預期輸出（stdout）",
+      "note": "備註（選填）",
+      "notePlaceholder": "例如：邊界情況、N 最大值",
+      "preview": "預覽（用目前程式碼跑）",
+      "previewing": "執行中…",
+      "previewOutput": "目前程式碼輸出",
+      "previewMatch": "與預期相符",
+      "previewMismatch": "與預期不符（這只是給您參考；判題以 reference.cpp 為準）",
+      "submitButton": "送出 PR",
+      "commitMessage": "feat(cases): add testcase to {{qid}}",
+      "prTitle": "[testcase] {{qid}}: add testcase",
+      "prBody": "新增測資至 `{{qid}}`。{{note}}"
+    },
+    "newQuestion": {
+      "button": "+ 建議新題目",
+      "title": "建議新題目",
+      "fields": {
+        "gpeYear": "GPE 年度",
+        "gpeSession": "場次",
+        "gpeNo": "題號",
+        "title": "題目標題",
+        "uvaId": "UVA 題號（選填）",
+        "uvaName": "UVA 題目名稱（選填）",
+        "tags": "標籤（逗號分隔）",
+        "difficulty": "難度",
+        "timeLimitMs": "時間限制 (ms)",
+        "memLimitMb": "記憶體限制 (MB)",
+        "judge": "判題模式",
+        "sampleIn": "範例輸入",
+        "sampleOut": "範例輸出",
+        "statement": "題目敘述（Markdown，可選 — 預設為 UVA 連結）"
+      },
+      "submit": "送出 PR",
+      "commitMessage": "feat(questions): suggest new question {{gpeNo}}",
+      "prTitle": "[new-question] {{gpeNo}}: {{title}}",
+      "prBody": "建議新題目 `{{gpeNo}} - {{title}}`。請依照題目敘述補上 `solutions/reference.cpp` 後 CI 才會通過。"
+    }
+  },
   "ide": {
     "tabs": {
       "practice": "Practice",
