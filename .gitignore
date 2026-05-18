@@ -3,3 +3,7 @@
 spike/**/node_modules/
 spike/**/.cache/
 spike/wasm-toolchain/emception/emception-lib/
+
+# App build output
+app/node_modules/
+app/dist/
