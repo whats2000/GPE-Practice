@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <title>Device Flow CORS Spike</title>
+  <title>GitHub PAT 快速測試</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -23,8 +23,9 @@
       border-radius: 6px;
     }
     legend { padding: 0 0.5rem; font-weight: 600; }
-    label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.25rem; }
-    input[type="text"] {
+    label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.25rem; margin-top: 0.75rem; }
+    input[type="text"],
+    input[type="password"] {
       width: 100%;
       padding: 0.5rem;
       font-family: ui-monospace, SFMono-Regular, monospace;
@@ -35,6 +36,9 @@
     }
     .row { display: flex; gap: 0.5rem; align-items: stretch; margin-top: 0.75rem; }
     .row input { flex: 1; }
+    .repo-row { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem; }
+    .repo-row input { flex: 1; }
+    .repo-row span { color: #888; font-size: 1rem; }
     button {
       padding: 0.5rem 1rem;
       font-size: 0.95rem;
@@ -55,6 +59,14 @@
       border-radius: 3px;
     }
     .help a { color: #0078c8; }
+    .fork-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: #555;
+    }
     pre#log {
       margin-top: 1rem;
       padding: 0.75rem;
@@ -70,48 +82,70 @@
   </style>
 </head>
 <body>
-  <h1>GitHub Device Flow CORS Spike</h1>
+  <h1>GitHub PAT 快速測試</h1>
   <p class="subtitle">
-    驗證 GitHub Device Flow 是否能從靜態站台直接完成，不需要 CORS 代理。
+    驗證您的 Personal Access Token 是否具備正確的存取權限。
   </p>
 
   <fieldset>
     <legend>設定</legend>
 
-    <label for="client-id">GitHub App Client ID</label>
+    <label for="pat">GitHub Personal Access Token（PAT）</label>
     <input
-      type="text"
-      id="client-id"
-      placeholder="Iv1.abcdef0123456789 或 Iv23li... (Client ID 一律可公開)"
+      type="password"
+      id="pat"
+      placeholder="ghp_..."
       autocomplete="off"
       spellcheck="false"
     />
 
     <div class="help">
-      尚未註冊測試用 GitHub App？
+      尚未建立 PAT？請前往
       <a
-        href="https://github.com/settings/apps/new"
+        href="https://github.com/settings/personal-access-tokens/new"
         target="_blank"
         rel="noopener noreferrer"
-      >點此前往 github.com/settings/apps/new</a>
-      註冊，請勾選 <strong>Enable Device Flow</strong>；不需要產生 client secret。
-      Client ID 會自動儲存於 localStorage，下次開啟此頁面不必重新輸入。
+      >github.com/settings/personal-access-tokens/new</a>
+      建立一個細粒度權杖（Fine-grained PAT），並勾選以下權限：
+      <strong>Contents（Read &amp; write）</strong>、
+      <strong>Pull requests（Read &amp; write）</strong>、
+      <strong>Metadata（Read）</strong>。
     </div>
 
-    <div class="row">
+    <label>目標儲存庫</label>
+    <div class="repo-row">
       <input
         type="text"
-        id="scope"
-        value="public_repo"
-        placeholder="OAuth scope，預設 public_repo"
+        id="owner"
+        value="whats2000"
+        placeholder="擁有者（owner）"
         autocomplete="off"
         spellcheck="false"
       />
-      <button id="start" type="button">開始 Device Flow</button>
+      <span>/</span>
+      <input
+        type="text"
+        id="repo"
+        value="GPE-Practice"
+        placeholder="儲存庫名稱（repo）"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+
+    <div class="fork-row">
+      <input type="checkbox" id="test-fork" />
+      <label for="test-fork" style="margin:0; color:#555;">
+        同時測試 Fork 權限（POST /repos/{owner}/{repo}/forks）
+      </label>
+    </div>
+
+    <div class="row">
+      <button id="verify" type="button">驗證 Token</button>
     </div>
   </fieldset>
 
-  <pre id="log">等待輸入 Client ID …</pre>
+  <pre id="log">等待輸入 PAT …</pre>
 
   <script type="module" src="./driver.js"></script>
 </body>

@@ -52,7 +52,7 @@ A single React + TypeScript SPA built with Vite, statically deployed to GitHub P
                 │               │           ▼                                                        │
                 │               │      Judge harness  (runs user binary per case, diffs stdout)      │
                 │               │                                                                    │
-                │               └─►  Contribute panel ── octokit (Device Flow token) ──► GitHub      │
+                │               └─►  Contribute panel ── octokit (PAT) ──────────────► GitHub      │
                 │                                                                                    │
                 └────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -92,7 +92,7 @@ User can switch to **Exam Mode** tab at any time. Exam Mode is a "spiritual repl
 2. User clicks "+ 新增測資" → form opens (stdin, expected stdout, optional note).
 3. User can click "Preview" — runs the user's own current source against the proposed input and shows the actual output. This is *not* a reference run (we don't ship `reference.cpp` to the browser; see §11 trust boundaries).
 4. User clicks "送出 PR":
-   - If GitHub is not connected → triggers Device Flow.
+   - If GitHub is not connected → opens the PAT input modal (see §9).
    - octokit forks the repo if needed, creates a branch (`add-case/<id>/<timestamp>`), commits one `.in`/`.out` pair to `data/questions/<id>/cases/community-<NNN>.in/.out`, opens a PR.
 5. CI (`validate-pr.yml`) runs `reference.cpp` against the new case. If its output disagrees with the contributor's expected output, the PR fails with a diff comment. Path to resolution: open an issue ("reference solution wrong") rather than merging a contradictory case.
 6. Maintainer reviews and merges. Case is canonical for everyone on next deploy.
@@ -291,7 +291,7 @@ The first three terms are computed at build time and live in `meta.json.stats.re
 | State | Zustand (global: auth token, theme, IDE state) | Tiny, no boilerplate, plays well with localStorage |
 | Editor | Monaco (VS Code engine) with `cpp` language pack | Closest to "real IDE" feel; syntax + bracket matching ship with it |
 | Markdown | react-markdown + rehype-highlight | For `statement.md` rendering |
-| GitHub client | `@octokit/rest` + `@octokit/auth-oauth-device` | Direct browser use; supports Device Flow |
+| GitHub client | `@octokit/rest` | Direct browser use; PAT auth via Authorization header |
 | Schema | zod | Used in CI (Node) and in-browser (defensive) |
 | i18n | react-i18next, single `zh-Hant.json` for v1 | Adding English later is mechanical |
 | Testing | Vitest (unit) + Playwright (one E2E happy path) | Vitest is Vite-native; Playwright covers the practice→submit loop |
@@ -387,12 +387,33 @@ Both `PracticeLayout` and `ExamLayout` subscribe to the same store — switching
 
 GitHub auth is required for Journeys B and C (creating PRs). Browse-only users never authenticate.
 
-- **Primary path:** Device Flow via a registered public GitHub App. User clicks "連結 GitHub" → sees an 8-character code → enters it on `github.com/login/device` → browser polls for token → token stored in `localStorage` (with explicit "登出" that clears it).
-- **Fallback path:** Paste a fine-grained PAT. Used if Device Flow CORS turns out to be blocked (see §11 risk 2) or by power users/maintainers who prefer it.
+**Auth model: user-supplied Personal Access Token (PAT).** The user creates a fine-grained PAT on github.com once, pastes it into the app's Settings panel, and octokit uses it for all PR operations. This pattern is the same one used by the sibling project at https://github.com/whats2000/RoboSkills — it works on GitHub Pages with zero backend, zero OAuth dance, and minimal UX friction.
 
-`contrib/octokitClient.ts` exposes a single facade so the rest of the app doesn't care which path was used:
+**UX flow** (matches `robotic-skill-visualize/src/components/PRGenerator/PRPreviewModal.tsx`):
+
+1. User clicks "送出 PR" (or "連結 GitHub" in Settings).
+2. A modal opens showing:
+   - Optional override: target repo owner + name (auto-detected from `window.location.href` if served from GitHub Pages, e.g. `whats2000.github.io/GPE-Practice` → owner=whats2000, repo=GPE-Practice).
+   - Password-style input with placeholder `ghp_...` for the PAT.
+   - Inline help link to https://github.com/settings/personal-access-tokens/new with the required scopes: Contents (R/W), Pull requests (R/W), Metadata (R).
+   - "送出 PR" button (disabled until token is non-empty).
+3. On submit, octokit forks/branches/commits/PRs and reports back the PR URL.
+4. Token is stored in `localStorage` only if the user ticks "記住此瀏覽器"; default is paste-per-session.
+
+**Why not Device Flow:**
+
+- Device Flow requires a Client ID per user-installed GitHub App (extra setup friction).
+- GitHub's `POST /login/oauth/access_token` historically returns no CORS headers from a browser fetch; making it work statically requires either a CORS proxy (violates "no backend") or a public GitHub App with the user's manual installation (more friction than PAT paste).
+- The sibling project ships PAT on GitHub Pages today and works. Re-using a proven pattern saves spike + implementation time.
+
+**`contrib/octokitClient.ts` (browser):**
 
 ```ts
+interface ContribClient {
+  setPat(pat: string, options?: { persist?: boolean }): void   // persist=true → localStorage
+  clearPat(): void
+}
+
 interface AuthedClient {
   proposeNewTestcase(args: NewTestcaseProposal): Promise<{ prUrl: string }>
   proposeNewQuestion(args: NewQuestionProposal):  Promise<{ prUrl: string }>
@@ -400,7 +421,9 @@ interface AuthedClient {
 }
 ```
 
-Each method handles: fork-if-needed → create branch → commit one or more files → open PR. Returns the URL so the UI can deep-link the user to it.
+The PAT never leaves the browser except as the `Authorization: Bearer …` header on octokit's outbound requests to GitHub.
+
+**Token rotation / leakage UX:** Settings panel always shows the last 4 chars of the stored PAT (or "未連結" if absent), with a "登出" button that clears `localStorage`. If a request returns 401 Unauthorized, the app prompts the user to paste a fresh token.
 
 ---
 
@@ -549,6 +572,6 @@ Treat Exam Mode as a **spiritual replica** of Code::Blocks, not a pixel-perfect 
 - The site is deployed at the new GitHub Pages URL.
 - At least 10 questions migrated from the GPE-Helper dataset, each with: meta.json, statement.md, ≥ 3 sample cases, reference.cpp, generator.cpp + validator.cpp, ≥ 5 generated cases.
 - A student can: pick a question, write C++ in the editor, run, see per-case verdicts, switch to Exam Mode, submit, see history in localStorage.
-- A contributor can: connect GitHub via Device Flow, add a single test case to an existing question via Journey B, see the PR appear on GitHub with `validate-pr.yml` running.
+- A contributor can: paste a GitHub PAT to connect, add a single test case to an existing question via Journey B, see the PR appear on GitHub with `validate-pr.yml` running.
 - A maintainer can: open a new-question PR, watch `register-new-question.yml` add `generator.cpp` + `validator.cpp` + generated cases, merge.
 - Zero LLM keys in browser code or shipped JS. Zero backend services we operate.

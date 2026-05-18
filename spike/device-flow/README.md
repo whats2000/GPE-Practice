@@ -1,49 +1,71 @@
-# Device Flow Spike
+# GitHub PAT 驗證測試
 
-**Goal:** Verify GitHub Device Flow can complete from a static browser page
-without a CORS-proxy backend.
+> **注意：** 本目錄原為 Device Flow CORS 測試用途，已於 2026-05-18 改為
+> PAT（Personal Access Token）驗證測試頁。改用 PAT 的原因請參閱下方「為何選擇 PAT」段落。
 
-## Setup
+## 為何選擇 PAT 而非 Device Flow
 
-1. Visit https://github.com/settings/apps/new and register a public test app:
-   - **Name:** any unique name on your account, e.g. `gpe-practice-spike`
-   - **Homepage URL:** `http://localhost`
-   - **Callback URL:** leave blank
-   - **Enable Device Flow:** ✔ (key checkbox; without this, `/login/device/code`
-     returns 404)
-   - **Permissions:** Contents (R/W), Pull requests (R/W), Metadata (R)
-   - **Webhook → Active:** uncheck
-   - Do NOT generate a client secret — Device Flow doesn't need one.
+Device Flow 需要使用者自行註冊 GitHub App 並取得 Client ID，且
+`POST /login/oauth/access_token` 端點在瀏覽器端歷來不回傳 CORS 標頭，
+從靜態頁面直接呼叫此端點必須使用 CORS Proxy（違反「無後端」設計不變式）或
+讓使用者手動安裝 GitHub App（比貼上 PAT 的門檻更高）。
 
-2. Note the **Client ID** shown on the app's settings page. (Public by design.)
+兄弟專案 `robotic-skill-visualize`（即 RoboSkills）已在 GitHub Pages 上以 PAT
+方式運行，可直接建立 PR，且無需任何後端服務。本專案採用相同的成熟做法。
 
-3. Serve the spike:
-   ```powershell
-   npx --yes serve spike/device-flow -l 5174
-   ```
+詳細決策紀錄請參閱 `docs/spikes/2026-05-18-device-flow-findings.md`，
+正式 UX 規格請參閱 `docs/superpowers/specs/2026-05-18-gpe-practice-rebuild-design.md` §9。
 
-4. Open `http://localhost:5174/` in a browser.
+---
 
-5. Paste the Client ID into the input field on the page. The value is saved
-   to `localStorage` for convenience on reload — Client IDs are public, so
-   persisting them is safe.
+## 建立 Fine-grained PAT
 
-6. Click **開始 Device Flow**. Follow the on-screen instructions: open the
-   `verification_uri` in a new tab, enter the `user_code`, authorize the app.
+1. 前往
+   [https://github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
+2. **Token name**：填入任何便於辨識的名稱，例如 `gpe-practice-spike`。
+3. **Repository access**：選擇「Only select repositories」，並加入
+   `whats2000/GPE-Practice`（或您要測試的目標儲存庫）。
+4. **Permissions（Repository permissions）**：
+   | 權限 | 層級 |
+   |------|------|
+   | Contents | Read and write |
+   | Pull requests | Read and write |
+   | Metadata | Read（預設必選） |
+5. 點擊「Generate token」並複製。**請妥善保管，頁面離開後無法再次查看。**
 
-7. The browser polls the token endpoint every few seconds. The page logs
-   either `PASS` (token received → CORS OK on both endpoints) or `FAIL`
-   (CORS error on one of them).
+---
 
-## What this tells us
+## 執行測試頁
 
-- **PASS:** `contrib/octokitClient.ts` can use `@octokit/auth-oauth-device`
-  in the browser as the primary auth path; PAT-paste fallback is shown only
-  behind an "Advanced" disclosure.
-- **FAIL (Step A):** GitHub blocks `/login/device/code` from browsers. Device
-  Flow is dead-in-the-water for static sites. We make PAT the primary path.
-- **FAIL (Step B):** The user-visible step works but we can't claim the token.
-  Either fall back to PAT or accept a tiny CORS-proxy Worker (would violate
-  the static-only spec invariant).
+```powershell
+npx --yes serve spike/device-flow -l 5174
+```
 
-Outcome will be recorded in `docs/spikes/2026-05-18-device-flow-findings.md`.
+接著在瀏覽器開啟 `http://localhost:5174/`：
+
+1. 將您的 PAT 貼入密碼欄位（`ghp_...`）。
+2. 確認或修改目標儲存庫的擁有者（owner）與名稱（repo），預設為
+   `whats2000 / GPE-Practice`。
+3. 若要一併測試 fork 權限，請勾選「同時測試 Fork 權限」。
+4. 點擊「驗證 Token」。
+
+頁面將依序執行：
+
+| 步驟 | 端點 | 目的 |
+|------|------|------|
+| 1 | `GET /user` | 確認 token 有效，取得已驗證的使用者名稱 |
+| 2 | `GET /repos/{owner}/{repo}` | 確認 token 具備目標儲存庫的讀取權限 |
+| 3（可選） | `POST /repos/{owner}/{repo}/forks` | 確認具備 fork 與 PR 所需的寫入權限 |
+
+每個步驟記錄 HTTP 狀態碼與關鍵回應欄位。Token 本身不會出現在日誌中，
+僅顯示末 4 碼供辨識。所有步驟通過後顯示 `PASS`；任一步驟失敗則顯示
+`FAIL` 並附上失敗端點與 HTTP 狀態碼。
+
+---
+
+## 注意事項
+
+- 本測試頁為**健全性檢查工具**，而非架構性 spike。PAT 搭配 octokit 在
+  靜態頁面上的可行性已是普遍共識（兄弟專案即為現成佐證）。
+- 正式應用程式的 PAT 輸入 UX 定義於規格文件 §9，實作位於
+  `app/src/contrib/octokitClient.ts`。

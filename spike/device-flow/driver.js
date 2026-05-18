@@ -1,146 +1,122 @@
-// Device Flow CORS spike — see ../README.md for setup.
+// PAT 驗證測試 — 確認 Fine-grained PAT 是否具備正確的 GitHub 存取權限。
 //
-// Goal: determine whether both endpoints respond to a browser fetch with
-// permissive CORS:
-//   1. POST https://github.com/login/device/code
-//   2. POST https://github.com/login/oauth/access_token
+// 測試步驟：
+//   1. GET /user                       → 確認 token 有效，記錄使用者名稱
+//   2. GET /repos/{owner}/{repo}       → 確認對目標儲存庫有讀取權限
+//   3. POST /repos/{owner}/{repo}/forks（可選）→ 確認具備 fork 所需的寫入權限
 //
-// The user supplies the Client ID via the UI (saved to localStorage for
-// convenience on reload). Client IDs are public by design — safe to keep
-// in localStorage. No client secret is involved.
+// Token 本身不會被記錄；日誌僅顯示末 4 碼。
 
-const STORAGE_KEY = 'gpe-spike-device-flow:client-id';
-const SCOPE_KEY   = 'gpe-spike-device-flow:scope';
-
-const $clientId = document.getElementById('client-id');
-const $scope    = document.getElementById('scope');
-const $start    = document.getElementById('start');
+const $pat      = document.getElementById('pat');
+const $owner    = document.getElementById('owner');
+const $repo     = document.getElementById('repo');
+const $testFork = document.getElementById('test-fork');
+const $verify   = document.getElementById('verify');
 const $log      = document.getElementById('log');
 
 const log = (msg) => { $log.textContent += msg + '\n'; };
 const clearLog = () => { $log.textContent = ''; };
 
-// ---- Restore previous inputs --------------------------------------------
-$clientId.value = localStorage.getItem(STORAGE_KEY) ?? '';
-$scope.value    = localStorage.getItem(SCOPE_KEY) ?? $scope.value;
-
-if ($clientId.value) {
-  $log.textContent = '已載入儲存的 Client ID。按下「開始 Device Flow」啟動測試。';
-}
-
-// ---- Persist on change --------------------------------------------------
-$clientId.addEventListener('input', () => {
-  localStorage.setItem(STORAGE_KEY, $clientId.value.trim());
-});
-$scope.addEventListener('input', () => {
-  localStorage.setItem(SCOPE_KEY, $scope.value.trim() || 'public_repo');
-});
-
 // ---- Main flow ----------------------------------------------------------
-$start.addEventListener('click', async () => {
-  const clientId = $clientId.value.trim();
-  const scope    = $scope.value.trim() || 'public_repo';
+$verify.addEventListener('click', async () => {
+  const pat   = $pat.value.trim();
+  const owner = $owner.value.trim();
+  const repo  = $repo.value.trim();
 
-  if (!clientId) {
+  if (!pat) {
     clearLog();
-    log('ABORT: 請先輸入 Client ID');
-    $clientId.focus();
+    log('中止：請先輸入 PAT。');
+    $pat.focus();
+    return;
+  }
+  if (!owner || !repo) {
+    clearLog();
+    log('中止：請填寫目標儲存庫的擁有者與名稱。');
     return;
   }
 
-  $start.disabled = true;
+  $verify.disabled = true;
   clearLog();
-  log(`client_id: ${clientId}`);
-  log(`scope:     ${scope}`);
+  log(`PAT 末 4 碼：…${pat.slice(-4)}`);
+  log(`目標儲存庫：${owner}/${repo}`);
   log('');
-  log('--- Step A: POST /login/device/code ---');
 
-  let codeResp;
+  // 延遲匯入 octokit（CDN，無需建置步驟）
+  let Octokit;
   try {
-    codeResp = await fetch('https://github.com/login/device/code', {
-      method: 'POST',
-      headers: {
-        'Accept':       'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ client_id: clientId, scope }),
-    });
+    log('正在從 CDN 載入 octokit …');
+    const mod = await import('https://esm.sh/octokit');
+    Octokit = mod.Octokit;
+    log('octokit 載入完成。');
   } catch (e) {
-    log('NETWORK FAILED (likely CORS preflight): ' + e.message);
-    log('Verdict for Step A: FAIL — endpoint not browser-callable.');
-    $start.disabled = false;
+    log('CDN 載入失敗：' + e.message);
+    log('請確認網路連線，或改用 VPN。');
+    $verify.disabled = false;
     return;
   }
 
-  if (!codeResp.ok) {
-    const body = await codeResp.text();
-    log(`HTTP ${codeResp.status}: ${body}`);
-    if (codeResp.status === 404) {
-      log('Hint: 404 通常表示 Client ID 拼錯或該 App 沒有啟用 Device Flow。');
-    }
-    $start.disabled = false;
-    return;
+  const octokit = new Octokit({ auth: pat });
+  let allPassed = true;
+
+  // ---- Step 1: GET /user ------------------------------------------------
+  log('');
+  log('--- 步驟 1：GET /user ---');
+  try {
+    const { data, status } = await octokit.request('GET /user');
+    log(`HTTP ${status}  使用者名稱：${data.login}`);
+    log('步驟 1：PASS');
+  } catch (e) {
+    const status = e.status ?? '???';
+    log(`HTTP ${status}  錯誤：${e.message}`);
+    log(`步驟 1：FAIL — GET /user 回傳 ${status}`);
+    allPassed = false;
   }
 
-  const code = await codeResp.json();
-  log(`device_code:      ${code.device_code.slice(0, 6)}…`);
-  log(`user_code:        ${code.user_code}`);
-  log(`verification_uri: ${code.verification_uri}`);
-  log(`interval:         ${code.interval}s`);
-  log(`expires_in:       ${code.expires_in}s`);
+  // ---- Step 2: GET /repos/{owner}/{repo} --------------------------------
   log('');
-  log(`>>> 請在新分頁開啟 ${code.verification_uri}`);
-  log(`>>> 輸入 user_code: ${code.user_code}`);
-  log('>>> 授權後輪詢將自動開始（5 秒後）。');
-  log('');
+  log(`--- 步驟 2：GET /repos/${owner}/${repo} ---`);
+  try {
+    const { data, status } = await octokit.request('GET /repos/{owner}/{repo}', { owner, repo });
+    log(`HTTP ${status}  儲存庫全名：${data.full_name}  可見度：${data.private ? '私有' : '公開'}`);
+    log('步驟 2：PASS');
+  } catch (e) {
+    const status = e.status ?? '???';
+    log(`HTTP ${status}  錯誤：${e.message}`);
+    log(`步驟 2：FAIL — GET /repos/${owner}/${repo} 回傳 ${status}`);
+    allPassed = false;
+  }
 
-  await new Promise((r) => setTimeout(r, 5000));
-
-  log('--- Step B: poll POST /login/oauth/access_token ---');
-  const deadline = Date.now() + code.expires_in * 1000;
-
-  while (Date.now() < deadline) {
-    let pollResp;
+  // ---- Step 3（可選）: POST /repos/{owner}/{repo}/forks -----------------
+  if ($testFork.checked) {
+    log('');
+    log(`--- 步驟 3（可選）：POST /repos/${owner}/${repo}/forks ---`);
     try {
-      pollResp = await fetch('https://github.com/login/oauth/access_token', {
-        method: 'POST',
-        headers: {
-          'Accept':       'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_id:   clientId,
-          device_code: code.device_code,
-          grant_type:  'urn:ietf:params:oauth:grant-type:device_code',
-        }),
-      });
+      const { data, status } = await octokit.request('POST /repos/{owner}/{repo}/forks', { owner, repo });
+      log(`HTTP ${status}  Fork 名稱：${data.full_name}`);
+      log('步驟 3：PASS');
     } catch (e) {
-      log('POLL NETWORK FAILED (CORS?): ' + e.message);
-      log('Verdict for Step B: FAIL — token endpoint not browser-callable.');
-      $start.disabled = false;
-      return;
+      const status = e.status ?? '???';
+      // 202 Accepted 也是正常回應，octokit 不會拋出
+      if (status === 202) {
+        log(`HTTP 202  Fork 操作已接受（非同步）。`);
+        log('步驟 3：PASS');
+      } else {
+        log(`HTTP ${status}  錯誤：${e.message}`);
+        log(`步驟 3：FAIL — POST /forks 回傳 ${status}`);
+        allPassed = false;
+      }
     }
-
-    const body = await pollResp.json();
-    if (body.access_token) {
-      log(`SUCCESS — token 開頭: ${body.access_token.slice(0, 6)}…`);
-      log('Verdict: PASS — Device Flow viable from a static origin.');
-      $start.disabled = false;
-      return;
-    }
-    if (body.error === 'authorization_pending') {
-      log('… 仍在等待使用者授權');
-    } else if (body.error === 'slow_down') {
-      log('… slow_down，間隔加倍');
-      code.interval *= 2;
-    } else {
-      log(`POLL ERROR: ${body.error} — ${body.error_description || ''}`);
-      $start.disabled = false;
-      return;
-    }
-    await new Promise((r) => setTimeout(r, code.interval * 1000));
   }
 
-  log('TIMED OUT 等待使用者授權');
-  $start.disabled = false;
+  // ---- 總結 -------------------------------------------------------------
+  log('');
+  log('========================================');
+  if (allPassed) {
+    log('PASS — 所有必要步驟均成功通過。此 PAT 可用於 GPE-Practice 的 PR 操作。');
+  } else {
+    log('FAIL — 部分步驟失敗，請依上方錯誤訊息調整 PAT 的權限設定後再試一次。');
+  }
+  log('========================================');
+
+  $verify.disabled = false;
 });
