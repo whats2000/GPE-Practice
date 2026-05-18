@@ -29,6 +29,7 @@ export default [
         WebAssembly: 'readonly',
         SharedArrayBuffer: 'readonly',
         crypto: 'readonly',
+        TextEncoder: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
         process: 'readonly',
