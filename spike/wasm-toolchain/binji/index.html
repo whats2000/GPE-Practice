@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>binji/wasm-clang 評估</title>
+  <style>
+    body { font-family: monospace; padding: 1rem; background: #1e1e1e; color: #d4d4d4; }
+    h1 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+    pre { background: #252526; border: 1px solid #3c3c3c; padding: 0.75rem; white-space: pre-wrap; min-height: 2rem; }
+    button { margin-right: 0.5rem; padding: 0.4rem 1rem; cursor: pointer; background: #0e639c; color: #fff; border: none; border-radius: 3px; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    .label { margin-top: 1rem; font-size: 0.85rem; color: #9cdcfe; }
+  </style>
+</head>
+<body>
+  <h1>binji/wasm-clang WASM 工具鏈評估</h1>
+  <div class="label">狀態</div>
+  <pre id="status">初始化中…</pre>
+  <div style="margin-top:0.75rem">
+    <button id="run-cold" disabled>冷編譯（Cold compile）</button>
+    <button id="run-warm" disabled>暖編譯（Warm compile）</button>
+  </div>
+  <div class="label">量測記錄</div>
+  <pre id="log"></pre>
+  <script type="module" src="./driver.js"></script>
+</body>
+</html>
