@@ -1,0 +1,3 @@
+# Downloaded artifact caches — re-populate with the curl commands in each
+# spike's README.md or driver.js. Never commit binary blobs.
+spike/**/.cache/
