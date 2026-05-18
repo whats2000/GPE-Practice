@@ -1,10 +1,21 @@
+import { HashRouter, Route, Routes } from 'react-router-dom'
+import Layout from './components/Layout'
+import QuestionList from './routes/QuestionList'
+import QuestionView from './routes/QuestionView'
+import Settings from './routes/Settings'
+import NotFound from './routes/NotFound'
+
 export default function App() {
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <h1 className="text-2xl font-bold">GPE 練習平台</h1>
-      <p className="mt-2 text-slate-600 dark:text-slate-400">
-        建置中…
-      </p>
-    </main>
+    <HashRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<QuestionList />} />
+          <Route path="/q/:id" element={<QuestionView />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </HashRouter>
   )
 }
