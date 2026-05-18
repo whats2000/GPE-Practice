@@ -2,12 +2,117 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <title>Device Flow Spike</title>
+  <title>Device Flow CORS Spike</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      max-width: 720px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #666; margin-top: 0; font-size: 0.9rem; }
+    fieldset {
+      margin-top: 1.25rem;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    legend { padding: 0 0.5rem; font-weight: 600; }
+    label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.25rem; }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.5rem;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 0.9rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .row { display: flex; gap: 0.5rem; align-items: stretch; margin-top: 0.75rem; }
+    .row input { flex: 1; }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: 1px solid #888;
+      border-radius: 4px;
+      background: #f4f4f4;
+    }
+    button:hover:not(:disabled) { background: #e4e4e4; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .help {
+      font-size: 0.82rem;
+      color: #666;
+      margin-top: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(0, 120, 200, 0.07);
+      border-left: 3px solid #0078c8;
+      border-radius: 3px;
+    }
+    .help a { color: #0078c8; }
+    pre#log {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #1e1e1e;
+      color: #eee;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
   <h1>GitHub Device Flow CORS Spike</h1>
-  <button id="start">Start device flow</button>
-  <pre id="log"></pre>
+  <p class="subtitle">
+    驗證 GitHub Device Flow 是否能從靜態站台直接完成，不需要 CORS 代理。
+  </p>
+
+  <fieldset>
+    <legend>設定</legend>
+
+    <label for="client-id">GitHub App Client ID</label>
+    <input
+      type="text"
+      id="client-id"
+      placeholder="Iv1.abcdef0123456789 或 Iv23li... (Client ID 一律可公開)"
+      autocomplete="off"
+      spellcheck="false"
+    />
+
+    <div class="help">
+      尚未註冊測試用 GitHub App？
+      <a
+        href="https://github.com/settings/apps/new"
+        target="_blank"
+        rel="noopener noreferrer"
+      >點此前往 github.com/settings/apps/new</a>
+      註冊，請勾選 <strong>Enable Device Flow</strong>；不需要產生 client secret。
+      Client ID 會自動儲存於 localStorage，下次開啟此頁面不必重新輸入。
+    </div>
+
+    <div class="row">
+      <input
+        type="text"
+        id="scope"
+        value="public_repo"
+        placeholder="OAuth scope，預設 public_repo"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="start" type="button">開始 Device Flow</button>
+    </div>
+  </fieldset>
+
+  <pre id="log">等待輸入 Client ID …</pre>
+
   <script type="module" src="./driver.js"></script>
 </body>
 </html>
