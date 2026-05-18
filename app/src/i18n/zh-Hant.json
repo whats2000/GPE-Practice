@@ -12,7 +12,36 @@
   },
   "questionList": {
     "title": "題目列表",
-    "placeholder": "Phase 2 將加入資料、推薦度排序、搜尋與過濾。"
+    "search": "搜尋題目（標題或編號）",
+    "sortBy": "排序",
+    "filter": "篩選",
+    "showPassedOnly": "僅顯示已通過",
+    "hidePassed": "隱藏已通過",
+    "noMatches": "沒有符合條件的題目。",
+    "empty": "目前沒有題目；請等待後續 PR 貢獻。",
+    "columns": {
+      "recommendationScore": "推薦度",
+      "title": "題目",
+      "appearanceCount": "出題次數",
+      "lastAppearedYear": "最近出題",
+      "acRate": "AC 率",
+      "tags": "標籤",
+      "myStatus": "我的狀態"
+    },
+    "sort": {
+      "recommendation": "推薦度",
+      "appearances": "出題次數",
+      "recency": "最近出題",
+      "acRate": "AC 率（由低至高）",
+      "title": "標題"
+    },
+    "status": {
+      "untried": "未嘗試",
+      "tried": "嘗試中",
+      "passed": "已通過"
+    },
+    "favorite": "收藏",
+    "unfavorite": "取消收藏"
   },
   "questionView": {
     "title": "題目：{{id}}",
