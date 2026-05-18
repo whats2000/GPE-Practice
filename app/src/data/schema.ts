@@ -40,3 +40,12 @@ export const QuestionMetaSchema = z.object({
 export type QuestionMeta = z.infer<typeof QuestionMetaSchema>
 export type JudgeMode = z.infer<typeof JudgeModeSchema>
 export type Difficulty = z.infer<typeof DifficultySchema>
+
+export interface CaseRef {
+  id: string
+  visibility: 'sample' | 'generated' | 'community' | 'hidden'
+}
+
+export type QuestionManifestEntry = QuestionMeta & {
+  caseList: readonly CaseRef[]
+}

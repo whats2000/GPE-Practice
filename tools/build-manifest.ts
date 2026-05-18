@@ -7,7 +7,7 @@
  * Run with:  pnpm --filter gpe-practice-tools build-manifest
  * Or from app/ via `pnpm prebuild` (wired in app/package.json).
  */
-import { readdirSync, readFileSync, writeFileSync, statSync, existsSync, mkdirSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync, statSync, existsSync, mkdirSync, copyFileSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
@@ -16,6 +16,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
 const QUESTIONS_DIR = join(REPO_ROOT, 'data', 'questions')
 const OUT_FILE = join(REPO_ROOT, 'app', 'src', 'data', 'manifest.gen.ts')
+const APP_PUBLIC_DATA = join(REPO_ROOT, 'app', 'public', 'data', 'questions')
 
 const JudgeModeSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('exact') }),
@@ -90,10 +91,57 @@ function loadMeta(dir: string): QuestionMeta {
   return parsed.data
 }
 
+interface CaseRef {
+  id: string
+  visibility: 'sample' | 'generated' | 'community' | 'hidden'
+}
+
+function classifyCase(filename: string): CaseRef['visibility'] {
+  if (filename.startsWith('sample-')) return 'sample'
+  if (filename.startsWith('generated-')) return 'generated'
+  if (filename.startsWith('community-')) return 'community'
+  if (filename.startsWith('hidden-')) return 'hidden'
+  return 'hidden'
+}
+
+function listCases(qid: string): CaseRef[] {
+  const dir = join(QUESTIONS_DIR, qid, 'cases')
+  if (!existsSync(dir)) return []
+  const files = readdirSync(dir)
+  const inFiles = files.filter((f) => f.endsWith('.in'))
+  return inFiles
+    .map((f) => {
+      const stem = f.slice(0, -'.in'.length)
+      const outFile = `${stem}.out`
+      if (!files.includes(outFile)) {
+        throw new Error(`Case ${qid}/${stem} has .in but no .out`)
+      }
+      return { id: stem, visibility: classifyCase(stem) }
+    })
+    .sort((a, b) => a.id.localeCompare(b.id))
+}
+
+function copyQuestionAssets(qid: string) {
+  const srcDir = join(QUESTIONS_DIR, qid)
+  const dstDir = join(APP_PUBLIC_DATA, qid)
+  mkdirSync(join(dstDir, 'cases'), { recursive: true })
+  const stmt = join(srcDir, 'statement.md')
+  if (existsSync(stmt)) copyFileSync(stmt, join(dstDir, 'statement.md'))
+  const casesSrc = join(srcDir, 'cases')
+  if (existsSync(casesSrc)) {
+    for (const f of readdirSync(casesSrc)) {
+      if (f.endsWith('.in') || f.endsWith('.out')) {
+        copyFileSync(join(casesSrc, f), join(dstDir, 'cases', f))
+      }
+    }
+  }
+}
+
 function emitManifest(metas: QuestionMeta[], currentYear: number): string {
   const maxAppearance = metas.reduce((m, q) => Math.max(m, q.stats.appearanceCount), 0)
   const enriched = metas.map((m) => ({
     ...m,
+    caseList: listCases(m.id),
     stats: {
       ...m.stats,
       recommendationScore: computeBuildTimeScore(m.stats, maxAppearance, currentYear),
@@ -104,9 +152,9 @@ function emitManifest(metas: QuestionMeta[], currentYear: number): string {
 // Regenerate via: pnpm --filter gpe-practice-tools build-manifest
 // Or run \`pnpm prebuild\` from app/.
 
-import type { QuestionMeta } from './schema'
+import type { QuestionManifestEntry } from './schema'
 
-export const questions: readonly QuestionMeta[] = ${JSON.stringify(enriched, null, 2)}
+export const questions: readonly QuestionManifestEntry[] = ${JSON.stringify(enriched, null, 2)}
 
 export const corpus = {
   totalQuestions: ${enriched.length},
@@ -120,11 +168,13 @@ export const corpus = {
 function main() {
   const dirs = listQuestionDirs()
   const metas = dirs.map(loadMeta)
+  for (const m of metas) copyQuestionAssets(m.id)
   const currentYear = new Date().getUTCFullYear()
   const out = emitManifest(metas, currentYear)
   mkdirSync(join(REPO_ROOT, 'app', 'src', 'data'), { recursive: true })
   writeFileSync(OUT_FILE, out, 'utf8')
   console.log(`Wrote ${relative(REPO_ROOT, OUT_FILE)} (${metas.length} questions)`)
+  console.log(`Copied statements + cases to ${relative(REPO_ROOT, APP_PUBLIC_DATA)}`)
 }
 
 main()
