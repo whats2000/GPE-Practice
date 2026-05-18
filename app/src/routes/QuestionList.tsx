@@ -5,6 +5,8 @@ import { addNotPassedBonus } from '@/lib/recommendationScore'
 import QuestionListRow from '@/components/QuestionListRow'
 import TagChip from '@/components/TagChip'
 import { useIdeStore } from '@/store'
+import { Button } from '@/components/ui/button'
+import NewQuestionForm from '@/contrib/NewQuestionForm'
 
 type SortKey = 'recommendation' | 'appearances' | 'recency' | 'acRate' | 'title'
 
@@ -14,6 +16,7 @@ export default function QuestionList() {
   const [sortKey, setSortKey] = useState<SortKey>('recommendation')
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
   const [hidePassed, setHidePassed] = useState(false)
+  const [newQuestionOpen, setNewQuestionOpen] = useState(false)
 
   const ide = useIdeStore()
 
@@ -66,7 +69,12 @@ export default function QuestionList() {
 
   return (
     <section>
-      <h1 className="text-2xl font-bold">{t('questionList.title')}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{t('questionList.title')}</h1>
+        <Button size="sm" onClick={() => setNewQuestionOpen(true)}>
+          {t('contrib.newQuestion.button')}
+        </Button>
+      </div>
 
       <div className="mt-4 flex flex-wrap gap-3 items-center">
         <input
@@ -137,6 +145,7 @@ export default function QuestionList() {
           </>
         )}
       </div>
+      <NewQuestionForm open={newQuestionOpen} onOpenChange={setNewQuestionOpen} />
     </section>
   )
 }
