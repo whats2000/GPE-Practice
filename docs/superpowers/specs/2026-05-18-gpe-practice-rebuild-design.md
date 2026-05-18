@@ -33,6 +33,7 @@ These constraints drove every other decision in this document. If a future chang
 4. **The user's code never leaves their browser** unless the user explicitly chooses to share it.
 5. **No LLM ever runs in the user's browser.** All LLM use lives in GitHub Actions, gated by maintainer-controlled triggers.
 6. **Desktop-only for v1.** WASM compiler payload (~30 MB) makes mobile a bad UX.
+7. **No enforced login.** Practice and browse (Journey A) never ask for authentication. The PAT input modal only appears when a user actively initiates a contribution (Journey B's "+ 新增測資 → 送出 PR" or Journey C's "+ 建議新題目 → 送出 PR"). The vast majority of users are practitioners, not contributors, and never see a login prompt.
 
 ---
 
@@ -151,7 +152,7 @@ GPE-Practice/
 │       ├── routes/
 │       │   ├── QuestionList.tsx         # browse + filter + "+ 建議新題目"
 │       │   ├── QuestionView.tsx         # tabbed shell: Practice | Exam Mode
-│       │   └── Settings.tsx             # GitHub auth, theme, hotkeys, export/import data
+│       │   └── Settings.tsx             # theme, hotkeys, export/import data, (advanced) clear remembered PAT
 │       ├── ide/
 │       │   ├── PracticeLayout.tsx       # split view: problem | editor + tests
 │       │   ├── ExamLayout.tsx           # Code::Blocks-style chrome
@@ -385,13 +386,13 @@ Both `PracticeLayout` and `ExamLayout` subscribe to the same store — switching
 
 ## 9. GitHub authentication
 
-GitHub auth is required for Journeys B and C (creating PRs). Browse-only users never authenticate.
+**Authentication is lazy, contribution-only, and entirely client-side.** Journey A (practice + browse) never asks for credentials. There is no "Connect GitHub" or "Sign in" button anywhere in the global UI or main navigation. The PAT input modal *only* appears when the user has just clicked "送出 PR" inside a Journey B (add testcase) or Journey C (suggest question) form. Users who don't contribute never see a login prompt — and "user wants to contribute" is the only point at which the modal renders.
 
-**Auth model: user-supplied Personal Access Token (PAT).** The user creates a fine-grained PAT on github.com once, pastes it into the app's Settings panel, and octokit uses it for all PR operations. This pattern is the same one used by the sibling project at https://github.com/whats2000/RoboSkills — it works on GitHub Pages with zero backend, zero OAuth dance, and minimal UX friction.
+**Auth model: user-supplied Personal Access Token (PAT).** When the contribution modal opens, the user creates a fine-grained PAT on github.com (one-time setup, linked from the modal), pastes it into the modal, and octokit uses it for that PR operation (and optionally persists it to `localStorage` if the user ticks "記住此瀏覽器"). This pattern is the same one used by the sibling project at https://github.com/whats2000/RoboSkills — works on GitHub Pages with zero backend, zero OAuth dance, and minimal UX friction. The token never leaves the user's browser except as `Authorization: Bearer …` on direct octokit calls to api.github.com.
 
 **UX flow** (matches `robotic-skill-visualize/src/components/PRGenerator/PRPreviewModal.tsx`):
 
-1. User clicks "送出 PR" (or "連結 GitHub" in Settings).
+1. User clicks "送出 PR" inside a Journey B or Journey C contribution form.
 2. A modal opens showing:
    - Optional override: target repo owner + name (auto-detected from `window.location.href` if served from GitHub Pages, e.g. `whats2000.github.io/GPE-Practice` → owner=whats2000, repo=GPE-Practice).
    - Password-style input with placeholder `ghp_...` for the PAT.
@@ -423,7 +424,7 @@ interface AuthedClient {
 
 The PAT never leaves the browser except as the `Authorization: Bearer …` header on octokit's outbound requests to GitHub.
 
-**Token rotation / leakage UX:** Settings panel always shows the last 4 chars of the stored PAT (or "未連結" if absent), with a "登出" button that clears `localStorage`. If a request returns 401 Unauthorized, the app prompts the user to paste a fresh token.
+**Token rotation / leakage UX:** Because there's no global GitHub-connection UI, token management happens *inside the contribution modal*. When the modal opens and a token is already in `localStorage` (from a prior "記住此瀏覽器" tick), the password field is pre-filled with `••••••••<last-4>` and a small "更換 token" link clears it. If octokit returns 401, the modal stays open with an error and the password field re-enabled. A separate "Advanced" section of Settings (if any) may surface a "清除已記住的 GitHub token" button for users who want to revoke without re-opening a contribution form.
 
 ---
 
