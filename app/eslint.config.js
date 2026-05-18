@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist', 'node_modules', '.vite', '.vitest-cache', 'vite.config.js'] },
+  { ignores: ['dist', 'node_modules', '.vite', '.vitest-cache', 'vite.config.js', 'public/**'] },
   js.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
@@ -30,6 +30,7 @@ export default [
         SharedArrayBuffer: 'readonly',
         crypto: 'readonly',
         TextEncoder: 'readonly',
+        navigator: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
         process: 'readonly',
