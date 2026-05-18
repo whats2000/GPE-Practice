@@ -8,14 +8,20 @@ commands below if the directory is missing.
 ## Why These Files (Not the Full 354 MB)
 
 The live demo serves 249 webpack asset files for the sysroot (`/wasm32-emscripten/*.a`),
-totalling ~354 MB. We download only the 44 core libraries (30.8 MB) needed for a
+totalling ~354 MB. We download only the 46 core libraries (30.9 MB) needed for a
 `-sSTANDALONE_WASM=1 -O2 -std=c++17` compile, excluding:
 
-- `libGL*`, `libwasmfs*`, `libwebgpu*`, `libstb_image*` — GL/GPU, not needed
+- `libGL-*` variants (`-emu-*`, `-mt-*`, `-webgl2-*`, `-full_es3-*`, etc.) — GL variant libs, not needed
+- `libwasmfs*`, `libwebgpu*`, `libstb_image*` — GPU/WasmFS, not needed
 - `libasan*`, `liblsan*`, `libubsan*`, `libsanitizer*` — sanitizers, not needed
-- `libfetch*`, `libjsmath*`, `libhtml5*`, `libembind*`, `libwasm_workers*` — browser APIs, not needed
+- `libfetch*`, `libjsmath*`, `libembind*`, `libwasm_workers*` — other browser APIs, not needed
 - All `-mt-*` and `-ww-*` variants — pthreads / wasm-workers, not needed
 - All `-emu-*`, `-ofb-*`, `-webgl2-*`, `-debug-*`, `-full_es3-*` variants — GL variants
+
+**Note:** `libGL.a` (base, non-variant) and `libhtml5.a` are included despite being
+browser-only APIs. The emscripten link line for `-sSTANDALONE_WASM=1` hardcodes
+`-lGL -lhtml5` unconditionally; wasm-ld aborts with signal 42 if these `.a` files are
+missing, even though the symbols are never used at runtime.
 
 If the compile fails with a missing library, check `_needed_assets.json` and add
 the corresponding hashed file.
@@ -84,7 +90,9 @@ curl --parallel --parallel-immediate `
   -o "$CACHE/4ae248a4532699a7fabd.a" "$BASE/4ae248a4532699a7fabd.a" `
   -o "$CACHE/8cb0ec04369d2ee7bc3b.a" "$BASE/8cb0ec04369d2ee7bc3b.a" `
   -o "$CACHE/842128646422958a8aa0.a" "$BASE/842128646422958a8aa0.a" `
-  -o "$CACHE/783b057899f333b0261a.a" "$BASE/783b057899f333b0261a.a"
+  -o "$CACHE/783b057899f333b0261a.a" "$BASE/783b057899f333b0261a.a" `
+  -o "$CACHE/94c22103400127179679.a" "$BASE/94c22103400127179679.a" `
+  -o "$CACHE/5de9254458072f582a9c.a" "$BASE/5de9254458072f582a9c.a"
 ```
 
 ## File Inventory
@@ -100,10 +108,12 @@ curl --parallel --parallel-immediate `
 | `9d1e542b80004e27297f.wasm` | `brotli` — brotli decompressor (used to unpack `root.pack.br`) | 146,837 |
 | `comlink.mjs` | Comlink 4.4.1 ESM — required to wrap the Worker in main thread JS | 12,158 |
 
-### Sysroot Libraries (44 files, 30.8 MB)
+### Sysroot Libraries (46 files, 30.9 MB)
 
 These are lazily XHR-fetched by the worker when the linker first accesses each lib.
-Files excluded from full 249-file set: GL, WasmFS, sanitizers, pthreads variants, GL variants.
+Files excluded from full 249-file set: GL variants, WasmFS, sanitizers, pthreads variants.
+`libGL.a` (base) and `libhtml5.a` are included because emscripten's STANDALONE_WASM link
+line hardcodes `-lGL -lhtml5` unconditionally; wasm-ld dies (signal 42) if they are absent.
 
 | Hash filename | Library name | Size (bytes) |
 |---|---|---|
@@ -151,6 +161,8 @@ Files excluded from full 249-file set: GL, WasmFS, sanitizers, pthreads variants
 | `842128646422958a8aa0.a` | `libunwind-except.a` | 5,074 |
 | `783b057899f333b0261a.a` | `libunwind-noexcept.a` | 328 |
 | `783b057899f333b0261a.a` | `libunwind.a` | 328 |
+| `94c22103400127179679.a` | `libGL.a` | 39,098 |
+| `5de9254458072f582a9c.a` | `libhtml5.a` | 39,268 |
 
 ## How the Worker Bundle Resolves Asset Paths
 
