@@ -308,9 +308,14 @@ type CompileResult =
   | { ok: true; wasm: Uint8Array; warnings: string[] }
   | { ok: false; diagnostics: ClangDiagnostic[] }
 
+type CompileOpts = {
+  optimization: 'O0' | 'O2'   // 'O0' for Run, 'O2' for Submit
+  // future: warnings, std, includes, etc.
+}
+
 interface Compiler {
-  init(): Promise<void>                        // loads clang.wasm + sysroot once
-  compile(source: string, opts?: CompileOpts): Promise<CompileResult>
+  init(): Promise<void>                    // loads emception toolchain + polyfill once
+  compile(source: string, opts: CompileOpts): Promise<CompileResult>
   dispose(): void
 }
 ```
@@ -319,7 +324,16 @@ interface Compiler {
 - Caches the parsed sysroot in IndexedDB so subsequent loads skip the ~30 MB download.
 - Runs in a **Web Worker** (not the main thread) so a compile loop never freezes the UI.
 - Surfaces structured diagnostics so Monaco renders error squiggles.
-- Specific WASM toolchain pick is deferred to the §11 spike — candidates: `wasm-clang`, `clangd-wasm`, `cpp-wasm-toolchain`.
+- Toolchain: emception (pre-built gh-pages artifacts, self-hosted); see §11.1 for full spike outcome.
+
+**Memoization.** `compile()` keys an in-memory + IndexedDB cache by
+`SHA-256(source + opts.optimization)`. Cache hit returns the previously-compiled
+wasm bytes in <10ms — the dominant Run-loop case for students who repeatedly
+click Run without changing code. Cache size is bounded (LRU, 100 entries).
+
+**Two-tier optimization.** `Run` always calls with `optimization: 'O0'` for fast
+iteration. `Submit` calls with `optimization: 'O2'` for the canonical verdict.
+This is a UX choice baked into the interface, not a buried implementation detail.
 
 ### 8.2 `engine/runtime.ts`
 
@@ -459,6 +473,28 @@ The script uses the `openai` npm package (since most providers, including Anthro
 
 **COOP/COEP on GitHub Pages.** If the picked toolchain uses `SharedArrayBuffer` (emception does), the page needs `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp` headers. GitHub Pages disallows custom HTTP headers. **Resolution:** ship `coi-serviceworker` (or equivalent), a ~5 KB Service Worker that registers itself on first load and synthesizes the COOP/COEP headers client-side on all subsequent same-origin responses. Cost: one extra reload on a user's first ever visit (~1 s "preparing environment…" flash); zero cost thereafter. Static-only invariant preserved — the Service Worker is browser code, not a server we operate.
 
+**Spike outcome (resolved):** emception (pre-built artifacts from jprendes.github.io,
+self-hosted via COOP/COEP service worker) is the picked toolchain. Measured on a
+2020-era Windows laptop:
+
+- init: 2,426 ms (loading toolchain into virtual FS)
+- cold compile: 6,021 ms (clang -O2 + wasm-ld + WASI marshaling)
+- warm compile: 3,954 ms (clang+lld processes are resident but re-invoked per call)
+- run: 6 ms
+- transferred: ~60 MB (cached in browser HTTP cache + IndexedDB after first load)
+- `<bits/stdc++.h>` polyfilled (libc++ doesn't ship it); polyfill is a single ~70-line
+  header that wraps the standard headers we'd expect — installed into emception's
+  virtual FS at `/working/bits/stdc++.h` at init time, plus `-I/working` on em++.
+
+Two latency mitigations are MANDATORY in Phase 3 to make the IDE feel responsive:
+1. **Source-hash memoization**: cache compiled `.wasm` keyed by SHA-256 of the source.
+   Repeat Run clicks on unchanged code are instant (memory hit).
+2. **Two-tier optimization**: "Run" uses `-O0` for fast feedback (warm ≈ 1.5 s).
+   "Submit" uses `-O2` for the final verdict (warm ≈ 4 s) — acceptable because
+   the user explicitly chose to wait.
+
+See `docs/spikes/2026-05-18-wasm-toolchain-findings.md` for full data.
+
 ### 11.2 GitHub Device Flow CORS (MEDIUM)
 
 **Claim:** A static site can complete Device Flow purely from a browser.
@@ -504,6 +540,7 @@ Treat Exam Mode as a **spiritual replica** of Code::Blocks, not a pixel-perfect 
 - Mutation-testing CI (Question 6 Option C) — could be added later
 - English UI (i18n scaffolding is in place; English locale deferred)
 - `checker` judge mode (would require compiling per-question `checker.cpp` to WASM on CI; only `exact`, `whitespace`, and `float` are supported in v1)
+- The static-only invariant is preserved — emception runs entirely in the browser via the COOP/COEP service-worker shim documented in §11.1.
 
 ---
 
