@@ -146,15 +146,96 @@ async function runWasm(wasmBytes, stdinText) {
 }
 
 // ---------------------------------------------------------------------------
+// <bits/stdc++.h> polyfill — Emscripten's libc++ doesn't ship the libstdc++-only
+// "bits/stdc++.h" convenience header. GPE-style sources rely on it heavily,
+// so we install a minimal polyfill into /working/bits/ and pass -I/working to
+// the compiler. Same UX as having the real header; trivial maintenance.
+// ---------------------------------------------------------------------------
+const BITS_STDCPP_POLYFILL = `// bits/stdc++.h polyfill for libc++. Includes the common standard headers
+// that competitive-programming and GPE-style code expects to be available.
+#pragma once
+#include <cassert>
+#include <cctype>
+#include <cerrno>
+#include <cfloat>
+#include <climits>
+#include <clocale>
+#include <cmath>
+#include <csetjmp>
+#include <csignal>
+#include <cstdarg>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <cwchar>
+#include <cwctype>
+#include <algorithm>
+#include <array>
+#include <atomic>
+#include <bitset>
+#include <chrono>
+#include <complex>
+#include <deque>
+#include <exception>
+#include <forward_list>
+#include <fstream>
+#include <functional>
+#include <initializer_list>
+#include <iomanip>
+#include <ios>
+#include <iosfwd>
+#include <iostream>
+#include <istream>
+#include <iterator>
+#include <limits>
+#include <list>
+#include <locale>
+#include <map>
+#include <memory>
+#include <new>
+#include <numeric>
+#include <ostream>
+#include <queue>
+#include <random>
+#include <ratio>
+#include <regex>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <stdexcept>
+#include <streambuf>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <typeindex>
+#include <typeinfo>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <valarray>
+#include <vector>
+`;
+
+async function installPolyfill(emception) {
+  await emception.fileSystem.mkdirTree('/working/bits');
+  await emception.fileSystem.writeFile('/working/bits/stdc++.h', BITS_STDCPP_POLYFILL);
+}
+
+// ---------------------------------------------------------------------------
 // Compile helper — writes src to virtual FS, runs em++, reads back .wasm
 // ---------------------------------------------------------------------------
 async function compile(emception, src) {
   // Write source into the worker's virtual filesystem
   await emception.fileSystem.writeFile('/working/main.cpp', src);
 
-  // Run em++ targeting a standalone WASM binary (WASI ABI, no JS glue)
+  // Run em++ targeting a standalone WASM binary (WASI ABI, no JS glue).
+  // -I/working/bits is intentionally NOT used — instead we expose -I/working
+  // so the user's `#include <bits/stdc++.h>` resolves to /working/bits/stdc++.h.
   const result = await emception.run(
-    'em++ -O2 -std=c++17 -sSTANDALONE_WASM=1 -sEXIT_RUNTIME=1 main.cpp -o main.wasm'
+    'em++ -O2 -std=c++17 -I/working -sSTANDALONE_WASM=1 -sEXIT_RUNTIME=1 main.cpp -o main.wasm'
   );
 
   if (result.returncode !== 0) {
@@ -230,10 +311,13 @@ let coldWasmBytes;
 
   const initMs = (performance.now() - t0).toFixed(0);
 
+  // Install the <bits/stdc++.h> polyfill once at init time
+  await installPolyfill(emception);
+
   sample = await loadSample();
 
   $status.textContent = `就緒。init 耗時 ${initMs} ms。`;
-  log(`init ${initMs} ms`);
+  log(`init ${initMs} ms (含 <bits/stdc++.h> 補丁)`);
   $cold.disabled = false;
 })().catch((e) => {
   $status.textContent = 'FAILED: ' + e.message;
