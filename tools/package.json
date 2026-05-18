@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build-manifest": "tsx build-manifest.ts",
-    "validate-question": "tsx validate-question.ts"
+    "validate-question": "tsx validate-question.ts",
+    "download-emception": "tsx download-emception.ts"
   },
   "dependencies": {
     "zod": "^3.23.8"
