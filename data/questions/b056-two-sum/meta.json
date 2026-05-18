@@ -1,0 +1,21 @@
+{
+  "id": "b056-two-sum",
+  "title": "兩數之和",
+  "gpeYear": 2024,
+  "gpeSession": 2,
+  "gpeNo": "B056",
+  "uvaId": 12345,
+  "uvaName": "Sum it Up",
+  "tags": ["array", "hashing"],
+  "difficulty": "easy",
+  "timeLimitMs": 2000,
+  "memLimitMb": 256,
+  "judge": { "mode": "whitespace" },
+  "generatedSeeds": [],
+  "stats": {
+    "appearanceCount": 6,
+    "lastAppearedYear": 2024,
+    "acRate": 0.71,
+    "recommendationScore": 0
+  }
+}

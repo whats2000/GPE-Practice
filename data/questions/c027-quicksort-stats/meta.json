@@ -1,0 +1,21 @@
+{
+  "id": "c027-quicksort-stats",
+  "title": "快速排序統計",
+  "gpeYear": 2023,
+  "gpeSession": 3,
+  "gpeNo": "C027",
+  "uvaId": 23456,
+  "uvaName": "Quicksort Statistics",
+  "tags": ["sorting", "recursion", "stats"],
+  "difficulty": "hard",
+  "timeLimitMs": 3000,
+  "memLimitMb": 256,
+  "judge": { "mode": "whitespace" },
+  "generatedSeeds": [],
+  "stats": {
+    "appearanceCount": 4,
+    "lastAppearedYear": 2023,
+    "acRate": 0.34,
+    "recommendationScore": 0
+  }
+}

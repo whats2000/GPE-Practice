@@ -1,0 +1,21 @@
+{
+  "id": "a013-fibonacci",
+  "title": "費氏數列",
+  "gpeYear": 2019,
+  "gpeSession": 1,
+  "gpeNo": "A013",
+  "uvaId": null,
+  "uvaName": null,
+  "tags": ["recursion", "dp", "math"],
+  "difficulty": "easy",
+  "timeLimitMs": 1000,
+  "memLimitMb": 128,
+  "judge": { "mode": "whitespace" },
+  "generatedSeeds": [],
+  "stats": {
+    "appearanceCount": 2,
+    "lastAppearedYear": 2019,
+    "acRate": 0.92,
+    "recommendationScore": 0
+  }
+}
