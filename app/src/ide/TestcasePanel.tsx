@@ -1,21 +1,22 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CaseData } from './useQuestionData'
+import type { QuestionManifestEntry } from '@/data/schema'
+import AddTestcaseForm from '@/contrib/AddTestcaseForm'
 
 interface Props {
   cases: CaseData[]
   verdicts: Record<string, 'PENDING' | 'AC' | 'WA' | 'TLE' | 'RE'>
+  meta: QuestionManifestEntry
+  currentSource: string
 }
 
-export default function TestcasePanel({ cases, verdicts }: Props) {
+export default function TestcasePanel({ cases, verdicts, meta, currentSource }: Props) {
   const { t } = useTranslation()
   const visible = cases.filter((c) => c.visibility !== 'hidden')
   const [activeId, setActiveId] = useState<string | null>(visible[0]?.id ?? null)
+  const [addOpen, setAddOpen] = useState(false)
   const active = visible.find((c) => c.id === activeId) ?? null
-
-  if (visible.length === 0) {
-    return <p className="text-sm text-muted-foreground p-2">{t('ide.errors.noCasesVisible')}</p>
-  }
 
   const verdictBadgeClass = (v: string) => {
     switch (v) {
@@ -27,9 +28,13 @@ export default function TestcasePanel({ cases, verdicts }: Props) {
     }
   }
 
+  if (addOpen) {
+    return <AddTestcaseForm meta={meta} currentSource={currentSource} onClose={() => setAddOpen(false)} />
+  }
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-1 overflow-x-auto p-1 border-b border-border">
+      <div className="flex gap-1 overflow-x-auto p-1 border-b border-border items-center">
         {visible.map((c) => {
           const v = verdicts[c.id] ?? 'PENDING'
           return (
@@ -48,18 +53,29 @@ export default function TestcasePanel({ cases, verdicts }: Props) {
             </button>
           )
         })}
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          className="ml-auto text-xs rounded px-2 py-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 whitespace-nowrap"
+        >
+          {t('contrib.testcase.buttonAdd')}
+        </button>
       </div>
-      {active && (
-        <div className="flex-1 overflow-auto p-2 grid grid-cols-1 lg:grid-cols-2 gap-2 text-xs font-mono">
-          <div>
-            <div className="text-muted-foreground mb-1">stdin</div>
-            <pre className="bg-muted p-2 rounded whitespace-pre-wrap break-all">{active.stdin}</pre>
+      {visible.length === 0 ? (
+        <p className="text-sm text-muted-foreground p-2">{t('ide.errors.noCasesVisible')}</p>
+      ) : (
+        active && (
+          <div className="flex-1 overflow-auto p-2 grid grid-cols-1 lg:grid-cols-2 gap-2 text-xs font-mono">
+            <div>
+              <div className="text-muted-foreground mb-1">stdin</div>
+              <pre className="bg-muted p-2 rounded whitespace-pre-wrap break-all">{active.stdin}</pre>
+            </div>
+            <div>
+              <div className="text-muted-foreground mb-1">expected stdout</div>
+              <pre className="bg-muted p-2 rounded whitespace-pre-wrap break-all">{active.expected}</pre>
+            </div>
           </div>
-          <div>
-            <div className="text-muted-foreground mb-1">expected stdout</div>
-            <pre className="bg-muted p-2 rounded whitespace-pre-wrap break-all">{active.expected}</pre>
-          </div>
-        </div>
+        )
       )}
     </div>
   )

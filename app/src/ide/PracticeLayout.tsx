@@ -104,7 +104,7 @@ export default function PracticeLayout({ data }: Props) {
           <MonacoEditor value={source} onChange={(s) => setSource(qid, s)} />
         </div>
         <div className="h-40 border-t border-border">
-          <TestcasePanel cases={data.cases} verdicts={verdictsForBadges} />
+          <TestcasePanel cases={data.cases} verdicts={verdictsForBadges} meta={data.meta} currentSource={source} />
         </div>
         <div className="h-40 border-t border-border">
           <OutputPanel
