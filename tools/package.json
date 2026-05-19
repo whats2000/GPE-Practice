@@ -9,6 +9,7 @@
     "validate-question": "tsx validate-question.ts",
     "download-emception": "tsx download-emception.ts",
     "llm-emit-generator": "tsx llm-emit-generator.ts",
+    "run-generator-and-reference": "tsx run-generator-and-reference.ts",
     "test": "vitest run"
   },
   "dependencies": {
