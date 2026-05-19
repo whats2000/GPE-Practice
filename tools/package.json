@@ -8,6 +8,7 @@
     "build-manifest": "tsx build-manifest.ts",
     "validate-question": "tsx validate-question.ts",
     "download-emception": "tsx download-emception.ts",
+    "llm-emit-generator": "tsx llm-emit-generator.ts",
     "test": "vitest run"
   },
   "dependencies": {
@@ -15,6 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
+    "dotenv": "^17.4.2",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
     "vitest": "^4.1.6"
