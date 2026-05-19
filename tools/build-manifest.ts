@@ -177,4 +177,7 @@ function main() {
   console.log(`Copied statements + cases to ${relative(REPO_ROOT, APP_PUBLIC_DATA)}`)
 }
 
-main()
+// Run main() only when this file is the script being executed, not when
+// imported (e.g., by build-manifest.test.ts).
+const isMain = import.meta.url === new URL(`file://${process.argv[1].replaceAll('\\', '/')}`).href
+if (isMain) main()
