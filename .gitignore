@@ -15,3 +15,6 @@ app/dist/
 .env.*.local
 tools/.env
 
+# tools/smoke-llm.ts output (inspection artifacts; not committed)
+tools/.smoke-llm-output/
+
