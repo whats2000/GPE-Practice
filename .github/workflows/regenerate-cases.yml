@@ -1,0 +1,39 @@
+name: regenerate-cases
+
+on:
+  workflow_dispatch:
+    inputs:
+      question-id:
+        description: 'Question id (folder name under data/questions/)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: false, fetch-depth: 1 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install tools deps
+        working-directory: tools
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate cases (no LLM)
+        working-directory: tools
+        run: pnpm run-generator-and-reference --question-id ${{ inputs['question-id'] }}
+
+      - name: Commit & push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore(cases): regenerate cases for ${{ inputs[''question-id''] }}'
+          file_pattern: 'data/questions/${{ inputs[''question-id''] }}/cases/generated-*'
