@@ -1,0 +1,82 @@
+name: register-new-question
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+  workflow_dispatch:
+    inputs:
+      question-id:
+        description: 'Question id (folder name under data/questions/)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    if: >
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'new-question'))
+    runs-on: ubuntu-latest
+    env:
+      LLM_BASE_URL: ${{ vars.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/' }}
+      LLM_API_KEY:  ${{ secrets.LLM_API_KEY }}
+      LLM_MODEL:    ${{ vars.LLM_MODEL || 'gemini-3.1-flash-lite' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install tools deps
+        working-directory: tools
+        run: pnpm install --frozen-lockfile
+
+      - name: Detect target question id(s)
+        id: qids
+        run: |
+          set -e
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ids=${{ inputs['question-id'] }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          ids=$(git diff --name-only "$base" "$head" | node tools/detect-changed-questions.mjs | tr '\n' ' ')
+          echo "ids=$ids" >> "$GITHUB_OUTPUT"
+
+      - name: LLM emit generator + validator
+        if: steps.qids.outputs.ids != ''
+        working-directory: tools
+        run: |
+          set -e
+          for id in ${{ steps.qids.outputs.ids }}; do
+            echo "=== llm-emit-generator: $id ==="
+            pnpm llm-emit-generator --question-id "$id"
+          done
+
+      - name: Generate cases via reference
+        if: steps.qids.outputs.ids != ''
+        working-directory: tools
+        run: |
+          set -e
+          for id in ${{ steps.qids.outputs.ids }}; do
+            echo "=== run-generator-and-reference: $id ==="
+            pnpm run-generator-and-reference --question-id "$id"
+          done
+
+      - name: Commit & push generators + generated cases
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore(cases): regenerate generators + cases for new-question PR'
+          file_pattern: 'data/questions/**/generators/* data/questions/**/cases/generated-*'
