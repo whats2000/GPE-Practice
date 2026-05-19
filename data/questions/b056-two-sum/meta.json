@@ -11,7 +11,13 @@
   "timeLimitMs": 2000,
   "memLimitMb": 256,
   "judge": { "mode": "whitespace" },
-  "generatedSeeds": [],
+  "generatedSeeds": [
+    { "seed": 1, "label": "tiny" },
+    { "seed": 2, "label": "tiny" },
+    { "seed": 7, "label": "small" },
+    { "seed": 42, "label": "medium" },
+    { "seed": 100, "label": "edge" }
+  ],
   "stats": {
     "appearanceCount": 6,
     "lastAppearedYear": 2024,

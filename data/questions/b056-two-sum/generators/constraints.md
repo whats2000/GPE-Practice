@@ -1,0 +1,6 @@
+- 1 ≤ n ≤ 10^5
+- -10^9 ≤ nums[i], target ≤ 10^9
+- Exactly one solution exists.
+- Indices are 0-based.
+- Time limit: 2000 ms
+- Memory limit: 256 MB
